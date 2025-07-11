@@ -12,6 +12,8 @@ import Teams from './pages/Teams';
 import Profile from './pages/Profile';
 import Monitoring from './pages/Monitoring';
 import Layout from './pages/Layout';
+import SOP from './pages/SOP';
+import Tasks from './pages/Tasks';
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -60,10 +62,12 @@ function App() {
         <Route path="/login" element={!user ? <LoginPage onLogin={() => setUser(auth.currentUser)} /> : <Navigate to="/admin/overview" />} />
         <Route path="/admin" element={user ? <AdminLayout companyDetails={companyDetails} /> : <Navigate to="/login" /> }>
           <Route path="overview" element={<Overview />} />
-          <Route path="setup" element={<Setup user={user} companyDetails={companyDetails} businessUnitDetails={businessUnitDetails} />} />
+          <Route path="setup" element={<Setup />} />
           <Route path="teams" element={<Teams />} />
           <Route path="profile" element={<Profile />} />
           <Route path="monitoring-plan" element={<Monitoring />} />
+          <Route path="sop" element={<SOP />} />
+          <Route path="tasks" element={<Tasks />} />
           <Route path="layout" element={<Layout />} />
           <Route index element={<Navigate to="overview" />} />
         </Route>

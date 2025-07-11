@@ -5,7 +5,6 @@ import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, collectionGroup
 import { db } from '../firebase';
 import { auth } from '../firebase';
 
-const RESPONSIBILITIES = ['Production Staff', 'Management'];
 const FREQUENCIES = ['Once a day', 'Once a week', 'Once a month'];
 
 export default function Monitoring() {
@@ -13,15 +12,21 @@ export default function Monitoring() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [step, setStep] = useState(1);
-  const [newTask, setNewTask] = useState({ name: '', responsibility: RESPONSIBILITIES[0], inUse: true });
+  const [newTask, setNewTask] = useState({ name: '', responsibility: '', inUse: true });
   const [taskType, setTaskType] = useState<'detailed' | 'checklist'>('detailed');
   const [details, setDetails] = useState({ frequency: FREQUENCIES[0], sameFrequency: true, sameRole: true });
-  const [checklist, setChecklist] = useState([{ title: '', allowNotDone: false }]);
+  const [checklist, setChecklist] = useState([
+    { title: '', allowNotDone: false, areaId: '', roomId: '', equipmentId: '' }
+  ]);
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [editMode, setEditMode] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [companyCode, setCompanyCode] = useState<string | null>(null);
+  const [roles, setRoles] = useState<{ id: string; name: string }[]>([]);
+  const [areas, setAreas] = useState<{ id: string; name: string }[]>([]);
+  const [rooms, setRooms] = useState<{ id: string; name: string }[]>([]);
+  const [equipment, setEquipment] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     // Fetch current user and companyCode
@@ -38,6 +43,32 @@ export default function Monitoring() {
     };
     fetchCurrentUser();
   }, []);
+
+  useEffect(() => {
+    if (!companyCode) return;
+    // Fetch roles for the current company
+    const fetchRoles = async () => {
+      const rolesSnap = await getDocs(collection(db, 'companies', companyCode, 'roles'));
+      const rolesList = rolesSnap.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name || '',
+      }));
+      setRoles(rolesList);
+    };
+    fetchRoles();
+    // Fetch areas, rooms, equipment
+    const fetchLayout = async () => {
+      const [areasSnap, roomsSnap, equipmentSnap] = await Promise.all([
+        getDocs(collection(db, 'companies', companyCode, 'areas')),
+        getDocs(collection(db, 'companies', companyCode, 'rooms')),
+        getDocs(collection(db, 'companies', companyCode, 'equipment')),
+      ]);
+      setAreas(areasSnap.docs.map(doc => ({ id: doc.id, name: doc.data().name || '' })));
+      setRooms(roomsSnap.docs.map(doc => ({ id: doc.id, name: doc.data().name || '' })));
+      setEquipment(equipmentSnap.docs.map(doc => ({ id: doc.id, name: doc.data().name || '' })));
+    };
+    fetchLayout();
+  }, [companyCode]);
 
   useEffect(() => {
     if (!companyCode) return;
@@ -72,10 +103,10 @@ export default function Monitoring() {
     }
     setDialogOpen(false);
     setStep(1);
-    setNewTask({ name: '', responsibility: RESPONSIBILITIES[0], inUse: true });
+    setNewTask({ name: '', responsibility: '', inUse: true });
     setTaskType('detailed');
     setDetails({ frequency: FREQUENCIES[0], sameFrequency: true, sameRole: true });
-    setChecklist([{ title: '', allowNotDone: false }]);
+    setChecklist([{ title: '', allowNotDone: false, areaId: '', roomId: '', equipmentId: '' }]);
     setEditMode(false);
     setSelectedTask(null);
   };
@@ -83,7 +114,7 @@ export default function Monitoring() {
     setChecklist(list => list.map((item, i) => i === idx ? { ...item, [field]: value } : item));
   };
   const handleAddChecklist = () => {
-    setChecklist(list => [...list, { title: '', allowNotDone: false }]);
+    setChecklist(list => [...list, { title: '', allowNotDone: false, areaId: '', roomId: '', equipmentId: '' }]);
   };
   const handleRemoveChecklist = (idx: number) => {
     setChecklist(list => list.filter((_, i) => i !== idx));
@@ -171,8 +202,8 @@ export default function Monitoring() {
               label="Responsible role"
               onChange={e => setNewTask(t => ({ ...t, responsibility: e.target.value }))}
             >
-              {RESPONSIBILITIES.map(role => (
-                <MenuItem key={role} value={role}>{role}</MenuItem>
+              {roles.map(role => (
+                <MenuItem key={role.id} value={role.name}>{role.name}</MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -282,7 +313,7 @@ export default function Monitoring() {
                   label="Assign task to"
                   onChange={e => setNewTask(t => ({ ...t, responsibility: e.target.value }))}
                 >
-                  {RESPONSIBILITIES.map(role => <MenuItem key={role} value={role}>{role}</MenuItem>)}
+                  {roles.map(role => <MenuItem key={role.id} value={role.name}>{role.name}</MenuItem>)}
                 </Select>
               </FormControl>
               <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
@@ -294,13 +325,46 @@ export default function Monitoring() {
           <Box sx={{ p: 2, borderRadius: 3, boxShadow: 1, bgcolor: '#fafbfc' }}>
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Checklist tasks</Typography>
             {checklist.map((item, idx) => (
-              <Box key={idx} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box key={idx} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                 <TextField
                   label="Checklist task title"
                   value={item.title}
                   onChange={e => handleChecklistChange(idx, 'title', e.target.value)}
                   fullWidth
                 />
+                <FormControl sx={{ minWidth: 120 }}>
+                  <InputLabel>Area</InputLabel>
+                  <Select
+                    value={item.areaId}
+                    label="Area"
+                    onChange={e => handleChecklistChange(idx, 'areaId', e.target.value)}
+                  >
+                    <MenuItem value=""><em>None</em></MenuItem>
+                    {areas.map(area => <MenuItem key={area.id} value={area.id}>{area.name}</MenuItem>)}
+                  </Select>
+                </FormControl>
+                <FormControl sx={{ minWidth: 120 }}>
+                  <InputLabel>Room</InputLabel>
+                  <Select
+                    value={item.roomId}
+                    label="Room"
+                    onChange={e => handleChecklistChange(idx, 'roomId', e.target.value)}
+                  >
+                    <MenuItem value=""><em>None</em></MenuItem>
+                    {rooms.map(room => <MenuItem key={room.id} value={room.id}>{room.name}</MenuItem>)}
+                  </Select>
+                </FormControl>
+                <FormControl sx={{ minWidth: 120 }}>
+                  <InputLabel>Equipment</InputLabel>
+                  <Select
+                    value={item.equipmentId}
+                    label="Equipment"
+                    onChange={e => handleChecklistChange(idx, 'equipmentId', e.target.value)}
+                  >
+                    <MenuItem value=""><em>None</em></MenuItem>
+                    {equipment.map(eq => <MenuItem key={eq.id} value={eq.id}>{eq.name}</MenuItem>)}
+                  </Select>
+                </FormControl>
                 <IconButton color="error" onClick={() => handleRemoveChecklist(idx)} disabled={checklist.length === 1}>
                   <span role="img" aria-label="delete">🗑️</span>
                 </IconButton>
@@ -359,7 +423,7 @@ export default function Monitoring() {
               });
               setTaskType(selectedTask.type || 'detailed');
               setDetails(selectedTask.details || { frequency: FREQUENCIES[0], sameFrequency: true, sameRole: true });
-              setChecklist(selectedTask.checklist || [{ title: '', allowNotDone: false }]);
+              setChecklist(selectedTask.checklist || [{ title: '', allowNotDone: false, areaId: '', roomId: '', equipmentId: '' }]);
               setActionModalOpen(false);
             }}
           >
