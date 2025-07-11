@@ -342,15 +342,8 @@ export default function Teams() {
     <Box sx={{ p: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h3" sx={{ fontWeight: 700, color: '#222' }}>
-          Teams Management
-        </Typography>
-        <Button
-          variant="outlined"
-          onClick={() => window.location.href='/admin/departments'}
-          sx={{ ml: 2 }}
-        >
-          Manage Departments
-        </Button>
+        Teams Management
+      </Typography>
       </Box>
 
       {/* Roles Section */}

@@ -50,7 +50,7 @@ function App() {
         }
       }
       if (foundCompanyCode) {
-        const profileRef = doc(db, 'companies', foundCompanyCode, 'profile', 'profile');
+        const profileRef = doc(db, 'companies', foundCompanyCode, 'companyProfile', 'profile');
         const profileSnap = await getDoc(profileRef);
         if (profileSnap.exists()) {
           setCompanyDetails(profileSnap.data());
@@ -74,7 +74,7 @@ function App() {
         <Route path="/login" element={!user ? <LoginPage onLogin={() => setUser(auth.currentUser)} /> : <Navigate to="/admin/overview" />} />
         <Route path="/admin" element={user ? <AdminLayout companyDetails={companyDetails} /> : <Navigate to="/login" /> }>
           <Route path="overview" element={<Overview />} />
-          <Route path="setup" element={<Setup user={user} companyDetails={companyDetails} businessUnitDetails={businessUnitDetails} />} />
+          <Route path="setup" element={<Setup />} />
           <Route path="teams" element={<Teams />} />
           <Route path="profile" element={<Profile />} />
           <Route path="monitoring-plan" element={<Monitoring />} />

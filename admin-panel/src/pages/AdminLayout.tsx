@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
@@ -6,11 +6,16 @@ import { Drawer, List, ListItem, ListItemButton, ListItemText, Toolbar, Box, But
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 
 const drawerWidth = 220;
 
 export default function AdminLayout({ companyDetails }: { companyDetails?: any }) {
   const navigate = useNavigate();
+  const user = auth.currentUser;
+  const displayName = user?.displayName || user?.email || 'User';
+  const email = user?.email || '';
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -30,12 +35,40 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
         <Toolbar />
         <Box sx={{ textAlign: 'center', py: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1 }}>
-            <Box
-              component="img"
-              src={companyDetails?.logoUrl || "https://via.placeholder.com/80?text=Logo"}
-              alt="Company Logo"
-              sx={{ width: 80, height: 80, borderRadius: '50%', mb: 1, bgcolor: '#eee', objectFit: 'cover', border: '2px solid #1976d2' }}
-            />
+            {companyDetails?.logoUrl ? (
+              <img
+                src={companyDetails.logoUrl}
+                alt="Company Logo"
+                style={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '3px solid #1976d2',
+                  background: '#fff'
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: '50%',
+                  border: '3px solid #1976d2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#1976d2',
+                  fontWeight: 600,
+                  fontSize: 18,
+                  background: '#fff',
+                  textAlign: 'center',
+                  lineHeight: 1.2
+                }}
+              >
+                Company<br />Logo
+              </div>
+            )}
           </Box>
           <Typography variant="h6" sx={{ fontWeight: 700, color: '#1976d2', letterSpacing: 1 }}>
             {companyDetails?.name || "Company name"}
@@ -56,11 +89,6 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
             <ListItem disablePadding>
               <ListItemButton component={NavLink} to="/admin/teams">
                 <ListItemText primary="Teams" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={NavLink} to="/admin/profile">
-                <ListItemText primary="Profile" />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
@@ -109,8 +137,10 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
               </IconButton>
             </Tooltip>
             <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
-              <AccountCircleIcon sx={{ color: '#888', mr: 1 }} />
-              <Typography sx={{ fontWeight: 500, color: '#222', fontSize: '1rem' }}>Rahul Moradiya</Typography>
+              <IconButton onClick={() => navigate('/admin/profile')} size="small" sx={{ ml: 1 }}>
+                <AccountCircleIcon sx={{ color: '#888' }} />
+                <Typography sx={{ fontWeight: 500, color: '#222', fontSize: '1rem', ml: 1 }}>{displayName}</Typography>
+              </IconButton>
             </Box>
           </Toolbar>
         </AppBar>

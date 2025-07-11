@@ -11,7 +11,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import EditIcon from '@mui/icons-material/Edit';
-import ClearIcon from '@mui/icons-material/Clear';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Alert from '@mui/material/Alert';
@@ -20,13 +19,11 @@ import Tab from '@mui/material/Tab';
 import AddIcon from '@mui/icons-material/Add';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { doc, setDoc, getDoc, updateDoc, getDocs, collectionGroup } from 'firebase/firestore';
-import { db } from '../firebase';
-import { storage } from '../firebase';
+import { db, storage, auth } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth } from '../firebase';
 
+// --- Types ---
 interface CompanyDetails {
-  [key: string]: string;
   country: string;
   name: string;
   regNumber: string;
@@ -40,6 +37,8 @@ interface CompanyDetails {
   monitoring: string;
   tempPrefill: string;
   dateFormat: string;
+  logoUrl?: string;
+  [key: string]: string | undefined;
 }
 
 interface BusinessUnitDetails {
@@ -58,35 +57,37 @@ interface BusinessUnitDetails {
   timeZone: string;
 }
 
+// --- Initial Data ---
 const initialCompany: CompanyDetails = {
-  country: 'Canada',
-  name: 'Copac Foods',
-  regNumber: '-',
-  vat: '-',
-  address: '20 Robb Boulevard, Orangeville, ON, Canada',
-  email: 'deji@copacfoods.com',
-  language: 'English (Canada)',
-  volumeUnits: 'International System of Units (SI)',
-  weightUnits: 'International System of Units (SI)',
-  tempUnit: 'Fahrenheit',
-  monitoring: 'Show actual time of entry',
-  tempPrefill: 'On',
-  dateFormat: '30.09.2024',
+  country: '',
+  name: '',
+  regNumber: '',
+  vat: '',
+  address: '',
+  email: '',
+  language: '',
+  volumeUnits: '',
+  weightUnits: '',
+  tempUnit: '',
+  monitoring: '',
+  tempPrefill: '',
+  dateFormat: '',
+  logoUrl: '',
 };
 
 const initialBusinessUnit: BusinessUnitDetails = {
-  unitName: 'Copac Foods',
-  address: '-',
-  country: 'Canada',
-  phone: '+1 4169952583',
-  email: 'deji@copacfoods.com',
-  workEmail: '-',
-  representative: 'Adedeji Oduwole',
-  businessType: 'Food service',
-  locationType: '-',
-  numEmployees: '-',
-  language: 'English (Canada)',
-  timeZone: 'America/Toronto, -04:00',
+  unitName: '',
+  address: '',
+  country: '',
+  phone: '',
+  email: '',
+  workEmail: '',
+  representative: '',
+  businessType: '',
+  locationType: '',
+  numEmployees: '',
+  language: '',
+  timeZone: '',
 };
 
 const companyFields = [
@@ -120,90 +121,41 @@ const buFields = [
   { key: 'timeZone', label: 'Time zone' },
 ];
 
-export default function Setup({ user, companyDetails, businessUnitDetails }: { user: any, companyDetails: any, businessUnitDetails: any }) {
-  // Company section state
+export default function Setup() {
+  // --- State ---
+  const [tab, setTab] = useState(0);
   const [company, setCompany] = useState<CompanyDetails>(initialCompany);
   const [editMode, setEditMode] = useState(false);
-  const [editValues, setEditValues] = useState<CompanyDetails>(company);
-  const [deleteDialog, setDeleteDialog] = useState(false);
-  const [logoUploadSuccess, setLogoUploadSuccess] = useState(false);
+  const [editValues, setEditValues] = useState<CompanyDetails>(initialCompany);
   const [logoUploadLoading, setLogoUploadLoading] = useState(false);
+  const [logoUploadSuccess, setLogoUploadSuccess] = useState(false);
   const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
+  const [companyCode, setCompanyCode] = useState<string | null>(null);
+  const [dynamicFields, setDynamicFields] = useState(companyFields.filter(f => !['country','name','address','email','language','volumeUnits','weightUnits','tempUnit','dateFormat'].includes(f.key)));
 
-  // Business unit section state
   const [businessUnit, setBusinessUnit] = useState<BusinessUnitDetails>(initialBusinessUnit);
   const [buEditMode, setBuEditMode] = useState(false);
-  const [buEditValues, setBuEditValues] = useState<BusinessUnitDetails>(businessUnit);
+  const [buEditValues, setBuEditValues] = useState<BusinessUnitDetails>(initialBusinessUnit);
+  const [dynamicBuFields, setDynamicBuFields] = useState(buFields.filter(f => !['unitName','address','country','phone','email','language','timeZone'].includes(f.key)));
 
-  // Tabs state
-  const [tab, setTab] = useState(0);
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setTab(newValue);
-  };
+  // --- Tab Change ---
+  const handleTabChange = (_: any, newValue: number) => setTab(newValue);
 
-  // Define non-deletable fields
-  const nonDeletableFields = [
-    'country',
-    'name',
-    'address',
-    'email',
-    'language',
-    'volumeUnits',
-    'weightUnits',
-    'tempUnit',
-    'dateFormat',
-  ];
-  const [dynamicFields, setDynamicFields] = useState(companyFields.filter(f => !nonDeletableFields.includes(f.key)));
-
-  // Handler to remove a dynamic field
-  const handleRemoveField = (key: string) => {
-    setDynamicFields(fields => fields.filter(f => f.key !== key));
-    setEditValues(prev => {
-      const newValues = { ...prev };
-      delete newValues[key];
-      return newValues;
-    });
-  };
-  // Handler to add a new dynamic field
-  const handleAddField = () => {
-    // Add a new field with a unique key
-    const newKey = `custom_${Date.now()}`;
-    setDynamicFields(fields => [...fields, { key: newKey, label: 'Custom field' }]);
-    setEditValues(prev => ({ ...prev, [newKey]: '' }));
-  };
-
-  // Handler to update a custom field's label
-  const handleCustomLabelChange = (key: string, newLabel: string) => {
-    setDynamicFields(fields => fields.map(f => f.key === key ? { ...f, label: newLabel } : f));
-  };
-
-  // Company section handlers
-  const handleEdit = () => {
-    setEditValues(company);
-    setEditMode(true);
-  };
-  const handleCancel = () => {
-    setEditMode(false);
-  };
-  const [companyCode, setCompanyCode] = useState<string | null>(null);
-
+  // --- Fetch Company Code ---
   useEffect(() => {
-    // Fetch current user and companyCode
     const fetchCurrentUser = async () => {
       const user = auth.currentUser;
       if (user) {
         const usersSnap = await getDocs(collectionGroup(db, 'users'));
         const userDoc = usersSnap.docs.find(doc => doc.data().uid === user.uid);
-        if (userDoc) {
-          setCompanyCode(userDoc.data().companyCode);
-        }
+        if (userDoc) setCompanyCode(userDoc.data().companyCode);
       }
     };
     fetchCurrentUser();
   }, []);
 
+  // --- Fetch Company Profile ---
   useEffect(() => {
-    // Fetch company profile details from Firestore
     const fetchProfile = async () => {
       if (!companyCode) return;
       const docRef = doc(db, 'companies', companyCode, 'companyProfile', 'profile');
@@ -217,129 +169,72 @@ export default function Setup({ user, companyDetails, businessUnitDetails }: { u
     fetchProfile();
   }, [companyCode]);
 
+  // --- Fetch Business Unit Profile ---
+  useEffect(() => {
+    const fetchBU = async () => {
+      if (!companyCode) return;
+      const docRef = doc(db, 'companies', companyCode, 'businessUnits', 'profile');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setBusinessUnit({ ...initialBusinessUnit, ...data });
+        setBuEditValues({ ...initialBusinessUnit, ...data });
+      }
+    };
+    fetchBU();
+  }, [companyCode]);
+
+  // --- Company Edit Handlers ---
+  const handleEdit = () => {
+    setEditValues(company);
+    setEditMode(true);
+  };
+  const handleCancel = () => setEditMode(false);
+  const handleFieldChange = (field: string, value: string) => setEditValues(prev => ({ ...prev, [field]: value }));
   const handleSave = async () => {
     setCompany(editValues);
     setEditMode(false);
     try {
       if (!companyCode) return;
       await setDoc(doc(db, 'companies', companyCode, 'companyProfile', 'profile'), editValues);
-      alert('Company details saved to Firebase!');
+      alert('Company details saved!');
     } catch (error: any) {
       alert('Error saving company details: ' + error.message);
     }
   };
-  const handleFieldChange = (field: string, value: string) => {
-    setEditValues((prev) => ({ ...prev, [field]: value }));
+
+  // --- Dynamic Company Fields ---
+  const handleRemoveField = (key: string) => {
+    setDynamicFields(fields => fields.filter(f => f.key !== key));
+    setEditValues(prev => { const newValues = { ...prev }; delete newValues[key]; return newValues; });
   };
-  const handleClear = (field: string) => {
-    setEditValues((prev) => ({ ...prev, [field]: '' }));
+  const handleAddField = () => {
+    const newKey = `custom_${Date.now()}`;
+    setDynamicFields(fields => [...fields, { key: newKey, label: 'Custom field' }]);
+    setEditValues(prev => ({ ...prev, [newKey]: '' }));
   };
-  const handleDelete = () => {
-    setCompany({
-      country: '',
-      name: '',
-      regNumber: '',
-      vat: '',
-      address: '',
-      email: '',
-      language: '',
-      volumeUnits: '',
-      weightUnits: '',
-      tempUnit: '',
-      monitoring: '',
-      tempPrefill: '',
-      dateFormat: '',
-    });
-    setDeleteDialog(false);
-    setEditMode(false);
+  const handleCustomLabelChange = (key: string, newLabel: string) => {
+    setDynamicFields(fields => fields.map(f => f.key === key ? { ...f, label: newLabel } : f));
   };
 
-  // Business unit section handlers
-  const handleBuEdit = () => {
-    setBuEditValues(businessUnit);
-    setBuEditMode(true);
-  };
-  const handleBuCancel = () => {
-    setBuEditMode(false);
-  };
-  const handleBuSave = async () => {
-    setBusinessUnit(buEditValues);
-    setBuEditMode(false);
-    try {
-      if (!companyCode) return;
-      await setDoc(doc(db, 'companies', companyCode, 'businessUnits', 'profile'), buEditValues);
-      alert('Business unit details saved to Firebase!');
-    } catch (error: any) {
-      alert('Error saving business unit details: ' + error.message);
-    }
-  };
-  const handleBuFieldChange = (field: string, value: string) => {
-    setBuEditValues((prev) => ({ ...prev, [field]: value }));
-  };
-  const handleBuClear = (field: string) => {
-    setBuEditValues((prev) => ({ ...prev, [field]: '' }));
-  };
-
-  // Define non-deletable fields for business units
-  const nonDeletableBuFields = [
-    'unitName',
-    'address',
-    'country',
-    'phone',
-    'email',
-    'language',
-    'timeZone',
-  ];
-  const [dynamicBuFields, setDynamicBuFields] = useState(buFields.filter(f => !nonDeletableBuFields.includes(f.key)));
-
-  // Handler to remove a dynamic business unit field
-  const handleRemoveBuField = (key: string) => {
-    setDynamicBuFields(fields => fields.filter(f => f.key !== key));
-    setBuEditValues(prev => {
-      const newValues = { ...prev };
-      delete newValues[key];
-      return newValues;
-    });
-  };
-  // Handler to add a new dynamic business unit field
-  const handleAddBuField = () => {
-    const newKey = `custom_bu_${Date.now()}`;
-    setDynamicBuFields(fields => [...fields, { key: newKey, label: 'Custom field' }]);
-    setBuEditValues(prev => ({ ...prev, [newKey]: '' }));
-  };
-  // Handler to update a custom business unit field's label
-  const handleCustomBuLabelChange = (key: string, newLabel: string) => {
-    setDynamicBuFields(fields => fields.map(f => f.key === key ? { ...f, label: newLabel } : f));
-  };
-
-  const fetchCompanyDetails = async () => {
-    if (!companyCode) return null;
-    const docRef = doc(db, 'companies', companyCode, 'companyProfile', 'profile');
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return docSnap.data();
-    } else {
-      return null;
-    }
-  };
-
+  // --- Logo Upload ---
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setLogoUploadError(null);
     setLogoUploadLoading(true);
     try {
       if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
-        // Always use the same path to overwrite the logo
         if (!companyCode) return;
         const storageRef = ref(storage, `company-logos/${companyCode}-logo.png`);
         await uploadBytes(storageRef, file);
         const url = await getDownloadURL(storageRef);
-        await updateDoc(doc(db, 'companies', companyCode, 'companyProfile', 'profile'), { logoUrl: url });
+        await setDoc(doc(db, 'companies', companyCode, 'companyProfile', 'profile'), { logoUrl: url }, { merge: true });
         setLogoUploadSuccess(true);
+        setEditValues(prev => ({ ...prev, logoUrl: url }));
+        setCompany(prev => ({ ...prev, logoUrl: url }));
         alert('Logo uploaded and saved!');
       }
     } catch (error: any) {
-      console.error('Upload error:', error);
       setLogoUploadError(error.message || 'Error uploading logo');
       alert('Error uploading logo: ' + error.message);
     } finally {
@@ -347,15 +242,40 @@ export default function Setup({ user, companyDetails, businessUnitDetails }: { u
     }
   };
 
-  useEffect(() => {
-    if (user && companyDetails) {
-      setCompany({ ...initialCompany, ...companyDetails });
+  // --- Business Unit Edit Handlers ---
+  const handleBuEdit = () => {
+    setBuEditValues(businessUnit);
+    setBuEditMode(true);
+  };
+  const handleBuCancel = () => setBuEditMode(false);
+  const handleBuFieldChange = (field: string, value: string) => setBuEditValues(prev => ({ ...prev, [field]: value }));
+  const handleBuSave = async () => {
+    setBusinessUnit(buEditValues);
+    setBuEditMode(false);
+    try {
+      if (!companyCode) return;
+      await setDoc(doc(db, 'companies', companyCode, 'businessUnits', 'profile'), buEditValues);
+      alert('Business unit details saved!');
+    } catch (error: any) {
+      alert('Error saving business unit details: ' + error.message);
     }
-    if (user && businessUnitDetails) {
-      setBusinessUnit({ ...initialBusinessUnit, ...businessUnitDetails });
-    }
-  }, [user, companyDetails, businessUnitDetails]);
+  };
 
+  // --- Dynamic BU Fields ---
+  const handleRemoveBuField = (key: string) => {
+    setDynamicBuFields(fields => fields.filter(f => f.key !== key));
+    setBuEditValues(prev => { const newValues = { ...prev }; delete newValues[key]; return newValues; });
+  };
+  const handleAddBuField = () => {
+    const newKey = `custom_bu_${Date.now()}`;
+    setDynamicBuFields(fields => [...fields, { key: newKey, label: 'Custom field' }]);
+    setBuEditValues(prev => ({ ...prev, [newKey]: '' }));
+  };
+  const handleCustomBuLabelChange = (key: string, newLabel: string) => {
+    setDynamicBuFields(fields => fields.map(f => f.key === key ? { ...f, label: newLabel } : f));
+  };
+
+  // --- Render ---
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, pt: 0, mt: 0, maxWidth: 900, mx: { xs: 1, sm: 2, md: 4 }, ml: 0 }}>
       <Tabs value={tab} onChange={handleTabChange} sx={{ mb: 4 }}>
@@ -367,10 +287,8 @@ export default function Setup({ user, companyDetails, businessUnitDetails }: { u
           <Typography variant="h3" sx={{ mb: 3, fontWeight: 700, color: '#222' }}>
             Company
           </Typography>
-          <Alert icon={<InfoOutlinedIcon fontSize="inherit" />} severity="success" sx={{ mb: 3, background: '#e6ffe6', color: '#222', border: '1px solid #b2f2bb' }}>
-            <span style={{ color: '#388e3c', fontWeight: 500 }}>
-              Review and edit your company information, including your measurement systems and units. Add a new company by clicking on the three dots beside this information.
-            </span>
+          <Alert icon={<InfoOutlinedIcon fontSize="inherit" />} severity="info" sx={{ mb: 3 }}>
+            Review and edit your company information, including measurement systems and units. Add custom fields as needed.
           </Alert>
           <Paper sx={{ p: 3, mb: 4 }}>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
@@ -384,7 +302,7 @@ export default function Setup({ user, companyDetails, businessUnitDetails }: { u
             </Box>
             <Box>
               {/* Render non-deletable fields */}
-              {companyFields.filter(f => nonDeletableFields.includes(f.key)).map(({ key, label, required, tooltip }) => (
+              {companyFields.filter(f => !dynamicFields.find(df => df.key === f.key)).map(({ key, label, required, tooltip }) => (
                 <Box key={key} sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
                   <Box sx={{ width: { xs: '100%', sm: '40%', md: '32%' }, minWidth: 120, pr: 2, display: 'flex', alignItems: 'center' }}>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>{label}{required && ' *'}</Typography>
@@ -399,7 +317,7 @@ export default function Setup({ user, companyDetails, businessUnitDetails }: { u
                       <TextField
                         size="small"
                         fullWidth
-                        value={editValues[key]}
+                        value={editValues[key] || ''}
                         onChange={e => handleFieldChange(key, e.target.value)}
                         required={!!required}
                         placeholder={label}
@@ -412,7 +330,7 @@ export default function Setup({ user, companyDetails, businessUnitDetails }: { u
                   </Box>
                 </Box>
               ))}
-              {/* Render dynamic (deletable) fields */}
+              {/* Render dynamic (custom) fields */}
               {dynamicFields.map(({ key, label, tooltip }) => (
                 <Box key={key} sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
                   <Box sx={{ width: { xs: '100%', sm: '40%', md: '32%' }, minWidth: 120, pr: 2, display: 'flex', alignItems: 'center' }}>
@@ -479,14 +397,17 @@ export default function Setup({ user, companyDetails, businessUnitDetails }: { u
                     <Typography sx={{ color: '#1976d2', ml: 2, fontWeight: 500 }}>Uploading...</Typography>
                   )}
                   {logoUploadSuccess && !logoUploadLoading && !logoUploadError && (
-                    <Typography sx={{ color: 'green', ml: 2, fontWeight: 500 }}>Logo uploaded successfully!</Typography>
+                    <Typography sx={{ color: 'green', ml: 2, fontWeight: 500 }}>Logo uploaded!</Typography>
                   )}
                   {logoUploadError && (
                     <Typography sx={{ color: 'red', ml: 2, fontWeight: 500 }}>{logoUploadError}</Typography>
                   )}
+                  {company.logoUrl && (
+                    <img src={company.logoUrl} alt="Company Logo" style={{ height: 40, marginLeft: 16, borderRadius: 4 }} />
+                  )}
                 </Box>
               </Box>
-              {/* Plus button always at the end */}
+              {/* Add custom field button */}
               {editMode && (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
                   <Tooltip title="Add More">
@@ -502,22 +423,8 @@ export default function Setup({ user, companyDetails, businessUnitDetails }: { u
                 <Button onClick={handleCancel}>Cancel</Button>
                 <Button onClick={handleSave} variant="contained">Save</Button>
               </Box>
-            ) : (
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
-                {/* Delete Company button removed */}
-              </Box>
-            )}
+            ) : null}
           </Paper>
-          <Dialog open={deleteDialog} onClose={() => setDeleteDialog(false)}>
-            <DialogTitle>Delete Company</DialogTitle>
-            <DialogContent>
-              <Typography>Are you sure you want to delete all company details? This action cannot be undone.</Typography>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setDeleteDialog(false)}>Cancel</Button>
-              <Button onClick={handleDelete} color="error" variant="contained">Delete</Button>
-            </DialogActions>
-          </Dialog>
         </Box>
       )}
       {tab === 1 && (
@@ -525,14 +432,12 @@ export default function Setup({ user, companyDetails, businessUnitDetails }: { u
           <Typography variant="h3" sx={{ mb: 3, fontWeight: 700, color: '#222' }}>
             Business units
           </Typography>
-          <Alert icon={<InfoOutlinedIcon fontSize="inherit" />} severity="success" sx={{ mb: 3, background: '#e6ffe6', color: '#222', border: '1px solid #b2f2bb' }}>
-            <span style={{ color: '#388e3c', fontWeight: 500 }}>
-              Review and edit your business unit information, including adding a new business unit, etc. Add a new business unit by clicking on the three dots beside this information.
-            </span>
+          <Alert icon={<InfoOutlinedIcon fontSize="inherit" />} severity="info" sx={{ mb: 3 }}>
+            Review and edit your business unit information. Add custom fields as needed.
           </Alert>
           <Paper sx={{ p: 3, mb: 4 }}>
             <Box>
-              {buFields.filter(f => nonDeletableBuFields.includes(f.key)).map(({ key, label, required, tooltip }) => (
+              {buFields.filter(f => !dynamicBuFields.find(df => df.key === f.key)).map(({ key, label, required, tooltip }) => (
                 <Box key={key} sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
                   <Box sx={{ width: { xs: '100%', sm: '40%', md: '32%' }, minWidth: 120, pr: 2, display: 'flex', alignItems: 'center' }}>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>{label}{required && ' *'}</Typography>
@@ -547,7 +452,7 @@ export default function Setup({ user, companyDetails, businessUnitDetails }: { u
                       <TextField
                         size="small"
                         fullWidth
-                        value={buEditValues[key]}
+                        value={buEditValues[key] || ''}
                         onChange={e => handleBuFieldChange(key, e.target.value)}
                         required={!!required}
                         placeholder={label}
@@ -633,7 +538,6 @@ export default function Setup({ user, companyDetails, businessUnitDetails }: { u
           </Paper>
         </Box>
       )}
-      {tab === 2 && null}
     </Box>
   );
 } 

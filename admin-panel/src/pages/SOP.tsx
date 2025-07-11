@@ -12,13 +12,13 @@ import MuiAlert, { AlertColor } from '@mui/material/Alert';
 interface SOP {
   id: string;
   title: string;
+  version?: string;
   description: string;
   department: string;
   fileUrl?: string;
   fileName?: string;
   assignedRoles: string[];
   assignedUsers: string[];
-  acknowledgedBy: string[];
   createdAt: any;
 }
 
@@ -39,6 +39,7 @@ export default function SOP() {
   const [users, setUsers] = useState<{ uid: string; name: string }[]>([]);
   const [companyCode, setCompanyCode] = useState<string>('');
   const [filterDepartment, setFilterDepartment] = useState('');
+  const [filterVersion, setFilterVersion] = useState('');
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState('');
@@ -89,7 +90,7 @@ export default function SOP() {
 
   const handleOpenDialog = (sop?: SOP) => {
     setEditMode(!!sop);
-    setCurrentSOP(sop ? { ...sop } : { assignedRoles: [], assignedUsers: [], acknowledgedBy: [] });
+    setCurrentSOP(sop ? { ...sop } : { assignedRoles: [], assignedUsers: [], version: '' });
     setFile(null);
     setDialogOpen(true);
   };
@@ -123,29 +124,46 @@ export default function SOP() {
       }
       const sopData = {
         ...currentSOP,
+        version: currentSOP.version || '',
         fileUrl,
         fileName,
         assignedRoles: currentSOP.assignedRoles || [],
         assignedUsers: currentSOP.assignedUsers || [],
-        acknowledgedBy: currentSOP.acknowledgedBy || [],
         createdAt: currentSOP.createdAt || new Date(),
         department: currentSOP.department || '',
       };
       if (editMode && currentSOP.id) {
-        await updateDoc(doc(db, 'companies', companyCode, 'sops', currentSOP.id), sopData);
-        setSOPs(prev => prev.map(s => s.id === currentSOP.id ? { ...s, ...sopData } as SOP : s));
-        setSnackbarMsg('SOP updated successfully!');
+        // Find the original SOP
+        const originalSOP = sops.find(s => s.id === currentSOP.id);
+        if (originalSOP && originalSOP.version !== currentSOP.version) {
+          // Version changed: create a new SOP document
+          const docRef = await addDoc(collection(db, 'companies', companyCode, 'sops'), {
+            ...sopData,
+            title: currentSOP.title || '',
+            description: currentSOP.description || '',
+          });
+          setSOPs(prev => [
+            ...prev,
+            { ...sopData, id: docRef.id, title: currentSOP.title || '', description: currentSOP.description || '' }
+          ]);
+          setSnackbarMsg('New SOP version added successfully!');
+        } else {
+          // Version unchanged: update existing SOP
+          await updateDoc(doc(db, 'companies', companyCode, 'sops', currentSOP.id), sopData);
+          setSOPs(prev => prev.map(s => s.id === currentSOP.id ? { ...s, ...sopData } as SOP : s));
+          setSnackbarMsg('SOP updated successfully!');
+        }
       } else {
         const newSop: SOP = {
           id: '',
           title: currentSOP.title || '',
+          version: currentSOP.version || '',
           description: currentSOP.description || '',
           department: currentSOP.department || '',
           fileUrl: fileUrl || '',
           fileName: fileName || '',
           assignedRoles: currentSOP.assignedRoles || [],
           assignedUsers: currentSOP.assignedUsers || [],
-          acknowledgedBy: currentSOP.acknowledgedBy || [],
           createdAt: currentSOP.createdAt || new Date(),
         };
         const docRef = await addDoc(collection(db, 'companies', companyCode, 'sops'), newSop);
@@ -195,17 +213,12 @@ export default function SOP() {
     setDeleteDialogOpen(false);
     setSopToDelete(null);
   };
-  const handleAcknowledge = async (id: string) => {
-    if (!auth.currentUser) return;
-    const sop = sops.find(s => s.id === id);
-    if (!sop) return;
-    const updated = { ...sop, acknowledgedBy: Array.from(new Set([...(sop.acknowledgedBy || []), auth.currentUser.uid])) };
-    await updateDoc(doc(db, 'companies', companyCode, 'sops', id), updated);
-    setSOPs(prev => prev.map(s => s.id === id ? updated : s));
-  };
+  // Get unique versions from SOPs
+  const uniqueVersions = Array.from(new Set(sops.map(sop => sop.version).filter(Boolean)));
   // Filter and search
   const filteredSOPs = sops.filter(sop =>
     (!filterDepartment || sop.department === filterDepartment) &&
+    (!filterVersion || sop.version === filterVersion) &&
     (!search || sop.title.toLowerCase().includes(search.toLowerCase()) || (sop.description && sop.description.toLowerCase().includes(search.toLowerCase())))
   );
 
@@ -231,6 +244,13 @@ export default function SOP() {
               {departments.map(dept => <MenuItem key={dept.id} value={dept.name}>{dept.name}</MenuItem>)}
             </Select>
           </FormControl>
+          <FormControl sx={{ minWidth: 160 }}>
+            <InputLabel>Version</InputLabel>
+            <Select value={filterVersion} label="Version" onChange={e => setFilterVersion(e.target.value)}>
+              <MenuItem value=""><em>All</em></MenuItem>
+              {uniqueVersions.map(version => <MenuItem key={version} value={version}>{version}</MenuItem>)}
+            </Select>
+          </FormControl>
           <TextField
             size="small"
             placeholder="Search SOPs..."
@@ -244,12 +264,12 @@ export default function SOP() {
           <TableHead>
             <TableRow>
               <TableCell>Title</TableCell>
+              <TableCell>Version</TableCell>
               <TableCell>Description</TableCell>
               <TableCell>Department</TableCell>
               <TableCell>File</TableCell>
               <TableCell>Assigned Roles</TableCell>
               <TableCell>Assigned Users</TableCell>
-              <TableCell>Acknowledged</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -257,6 +277,7 @@ export default function SOP() {
             {filteredSOPs.map(sop => (
               <TableRow key={sop.id}>
                 <TableCell>{sop.title}</TableCell>
+                <TableCell>{sop.version}</TableCell>
                 <TableCell>{sop.description}</TableCell>
                 <TableCell>{sop.department}</TableCell>
                 <TableCell>
@@ -275,13 +296,6 @@ export default function SOP() {
                     return user ? <Chip key={uid} label={user.name} size="small" sx={{ mr: 0.5 }} /> : null;
                   })}
                 </TableCell>
-                <TableCell>
-                  <Checkbox
-                    checked={!!sop.acknowledgedBy?.includes(auth.currentUser?.uid || '')}
-                    onChange={() => handleAcknowledge(sop.id)}
-                  />
-                  <Typography variant="caption">{sop.acknowledgedBy?.length || 0}</Typography>
-                </TableCell>
                 <TableCell align="right">
                   <IconButton onClick={() => handleOpenDialog(sop)}><Edit /></IconButton>
                   <IconButton onClick={() => handleDeleteClick(sop.id, sop.fileUrl)} color="error"><Delete /></IconButton>
@@ -299,6 +313,13 @@ export default function SOP() {
             label="Title"
             value={currentSOP.title || ''}
             onChange={e => setCurrentSOP(s => ({ ...s, title: e.target.value }))}
+            fullWidth
+            required
+          />
+          <TextField
+            label="Version"
+            value={currentSOP.version || ''}
+            onChange={e => setCurrentSOP(s => ({ ...s, version: e.target.value }))}
             fullWidth
             required
           />
