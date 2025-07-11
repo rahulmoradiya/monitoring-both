@@ -11,7 +11,6 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
   const [error, setError] = useState('');
   const [isRegister, setIsRegister] = useState(false);
   const [name, setName] = useState('');
-  const [companyName, setCompanyName] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,8 +20,6 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         const companyCode = uuidv4().slice(0, 8);
-        
-        // Save user details to Firebase
         await setDoc(doc(db, 'companies', companyCode, 'users', user.uid), {
           uid: user.uid,
           email,
@@ -30,13 +27,6 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
           companyCode,
           role: 'owner',
           createdAt: new Date(),
-        });
-
-        // Save company details to Firebase
-        await setDoc(doc(db, 'companies', companyCode), {
-          name: companyName,
-          createdAt: new Date(),
-          owner: user.uid,
         });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
@@ -56,15 +46,6 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
           placeholder="Name"
           value={name}
           onChange={e => setName(e.target.value)}
-          required
-        />
-      )}
-      {isRegister && (
-        <input
-          type="text"
-          placeholder="Company Name"
-          value={companyName}
-          onChange={e => setCompanyName(e.target.value)}
           required
         />
       )}

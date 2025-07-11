@@ -29,11 +29,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import type { SelectChangeEvent } from '@mui/material/Select';
-import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { setDoc, doc, getDoc, getDocs, collectionGroup, collection, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { initializeApp, deleteApp } from 'firebase/app';
-import { firebaseConfig } from '../firebase';
 
 interface Role {
   id: string;
@@ -48,11 +46,6 @@ interface TeamMember {
   role: string;
   responsibilities: string[];
   invitationStatus?: 'Pending' | 'Accepted' | 'Declined';
-}
-
-interface Department {
-  id: string;
-  name: string;
 }
 
 const initialRoles: Role[] = [
@@ -105,11 +98,10 @@ export default function Teams() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [departmentDialogOpen, setDepartmentDialogOpen] = useState(false);
-  const [editDepartmentMode, setEditDepartmentMode] = useState(false);
-  const [currentDepartment, setCurrentDepartment] = useState<Partial<Department>>({});
-  const [departmentLoading, setDepartmentLoading] = useState(false);
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [deptDialogOpen, setDeptDialogOpen] = useState(false);
+  const [newDept, setNewDept] = useState('');
+  const [deptToDelete, setDeptToDelete] = useState<string | null>(null);
 
   // Member management
   const handleMemberOpen = () => {
@@ -143,10 +135,7 @@ export default function Teams() {
     if (!currentMember.email || !currentMember.role || (!editMode && !currentMember.password)) return;
     if (!editMode) {
       try {
-        // Use a secondary app instance to avoid signing out the admin
-        const secondaryApp = initializeApp(firebaseConfig, 'Secondary');
-        const secondaryAuth = getAuth(secondaryApp);
-        const userCredential = await createUserWithEmailAndPassword(secondaryAuth, currentMember.email as string, currentMember.password as string);
+        const userCredential = await createUserWithEmailAndPassword(auth, currentMember.email as string, currentMember.password as string);
         const newUser = userCredential.user;
         if (currentUser?.companyCode) {
           await setDoc(doc(db, 'companies', currentUser.companyCode, 'users', newUser.uid), {
@@ -154,13 +143,10 @@ export default function Teams() {
             email: currentMember.email,
             name: currentMember.name || '',
             companyCode: currentUser.companyCode,
-            role: currentMember.role,
-            responsibilities: currentMember.responsibilities || [],
-            invitationStatus: currentMember.invitationStatus || 'Pending',
+            role: 'member',
             createdAt: new Date(),
           });
         }
-        await deleteApp(secondaryApp);
       } catch (error: any) {
         alert(error.message);
         return;
@@ -271,46 +257,30 @@ export default function Teams() {
     setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, invitationStatus: 'Pending' } : m)));
   };
 
-  // Department CRUD handlers
-  const handleOpenDepartmentDialog = (dept?: Department) => {
-    setEditDepartmentMode(!!dept);
-    setCurrentDepartment(dept ? { ...dept } : {});
-    setDepartmentDialogOpen(true);
-  };
-  const handleCloseDepartmentDialog = () => {
-    setDepartmentDialogOpen(false);
-    setCurrentDepartment({});
-    setEditDepartmentMode(false);
-  };
-  const handleDepartmentSave = async () => {
-    if (!companyCode || !currentDepartment.name) return;
-    setDepartmentLoading(true);
-    try {
-      if (editDepartmentMode && currentDepartment.id) {
-        await updateDoc(doc(db, 'companies', companyCode, 'departments', currentDepartment.id), { name: currentDepartment.name });
-        setDepartments(prev => prev.map(d => d.id === currentDepartment.id ? { ...d, name: currentDepartment.name! } : d));
-      } else {
-        const docRef = await addDoc(collection(db, 'companies', companyCode, 'departments'), { name: currentDepartment.name });
-        setDepartments(prev => [...prev, { id: docRef.id, name: currentDepartment.name! }]);
-      }
-      handleCloseDepartmentDialog();
-    } catch (err) {
-      alert('Failed to save department.');
-    } finally {
-      setDepartmentLoading(false);
-    }
-  };
-  const handleDepartmentDelete = async (id: string) => {
+  // Departments management
+  useEffect(() => {
     if (!companyCode) return;
-    setDepartmentLoading(true);
-    try {
-      await deleteDoc(doc(db, 'companies', companyCode, 'departments', id));
-      setDepartments(prev => prev.filter(d => d.id !== id));
-    } catch (err) {
-      alert('Failed to delete department.');
-    } finally {
-      setDepartmentLoading(false);
-    }
+    const fetchDepartments = async () => {
+      const deptSnap = await getDocs(collection(db, 'companies', companyCode, 'departments'));
+      setDepartments(deptSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as { id: string; name: string })));
+    };
+    fetchDepartments();
+  }, [companyCode]);
+
+  const handleAddDepartment = async () => {
+    if (!newDept || !companyCode) return;
+    await addDoc(collection(db, 'companies', companyCode, 'departments'), { name: newDept });
+    setNewDept('');
+    setDeptDialogOpen(false);
+    // Refresh list
+    const deptSnap = await getDocs(collection(db, 'companies', companyCode, 'departments'));
+    setDepartments(deptSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as { id: string; name: string })));
+  };
+  const handleDeleteDepartment = async (id: string) => {
+    if (!companyCode) return;
+    await deleteDoc(doc(db, 'companies', companyCode, 'departments', id));
+    setDepartments(prev => prev.filter(d => d.id !== id));
+    setDeptToDelete(null);
   };
 
   useEffect(() => {
@@ -368,20 +338,20 @@ export default function Teams() {
     fetchMembers();
   }, [companyCode]);
 
-  useEffect(() => {
-    if (!companyCode) return;
-    const fetchDepartments = async () => {
-      const deptSnap = await getDocs(collection(db, 'companies', companyCode, 'departments'));
-      setDepartments(deptSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Department)));
-    };
-    fetchDepartments();
-  }, [companyCode]);
-
   return (
     <Box sx={{ p: 4 }}>
-      <Typography variant="h3" sx={{ mb: 4, fontWeight: 700, color: '#222' }}>
-        Teams Management
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Typography variant="h3" sx={{ fontWeight: 700, color: '#222' }}>
+          Teams Management
+        </Typography>
+        <Button
+          variant="outlined"
+          onClick={() => window.location.href='/admin/departments'}
+          sx={{ ml: 2 }}
+        >
+          Manage Departments
+        </Button>
+      </Box>
 
       {/* Roles Section */}
       <Box sx={{ mb: 4 }}>
@@ -458,6 +428,8 @@ export default function Teams() {
                 <TableCell>Name</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Role</TableCell>
+                <TableCell>Responsibilities</TableCell>
+                <TableCell>Invitation Status</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -467,6 +439,14 @@ export default function Teams() {
                   <TableCell>{member.name}</TableCell>
                   <TableCell>{member.email}</TableCell>
                   <TableCell>{member.role}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {member.responsibilities.map((resp, index) => (
+                        <Chip key={index} label={resp} size="small" variant="outlined" />
+                      ))}
+                    </Box>
+                  </TableCell>
+                  <TableCell>{member.invitationStatus || '-'}</TableCell>
                   <TableCell align="right">
                     <Tooltip title="Edit">
                       <IconButton onClick={() => handleMemberEdit(member)} color="primary">
@@ -486,6 +466,66 @@ export default function Teams() {
             </TableBody>
           </Table>
         </TableContainer>
+      </Box>
+
+      {/* Departments Section */}
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h5" sx={{ fontWeight: 600 }}>Departments</Typography>
+          <Button variant="contained" onClick={() => setDeptDialogOpen(true)}>
+            Add Department
+          </Button>
+        </Box>
+        <TableContainer component={Paper} sx={{ mb: 2 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {departments.map(dept => (
+                <TableRow key={dept.id}>
+                  <TableCell>{dept.name}</TableCell>
+                  <TableCell align="right">
+                    <IconButton color="error" onClick={() => setDeptToDelete(dept.id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        {/* Add Department Dialog */}
+        <Dialog open={deptDialogOpen} onClose={() => setDeptDialogOpen(false)}>
+          <DialogTitle>Add Department</DialogTitle>
+          <DialogContent>
+            <TextField
+              label="Department Name"
+              value={newDept}
+              onChange={e => setNewDept(e.target.value)}
+              fullWidth
+              autoFocus
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeptDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddDepartment} variant="contained" disabled={!newDept}>Add</Button>
+          </DialogActions>
+        </Dialog>
+        {/* Delete Department Confirmation Dialog */}
+        <Dialog open={!!deptToDelete} onClose={() => setDeptToDelete(null)}>
+          <DialogTitle>Delete Department</DialogTitle>
+          <DialogContent>
+            <Typography>Are you sure you want to delete this department? This action cannot be undone.</Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeptToDelete(null)}>Cancel</Button>
+            <Button onClick={() => deptToDelete && handleDeleteDepartment(deptToDelete)} color="error" variant="contained">Delete</Button>
+          </DialogActions>
+        </Dialog>
       </Box>
 
       {/* Member Dialog */}
@@ -527,6 +567,16 @@ export default function Teams() {
               required
               type="password"
             />
+          )}
+          {currentMember.role && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>Responsibilities:</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {currentMember.responsibilities?.map((resp, index) => (
+                  <Chip key={index} label={resp} size="small" variant="outlined" />
+                ))}
+              </Box>
+            </Box>
           )}
         </DialogContent>
         <DialogActions>
@@ -589,64 +639,6 @@ export default function Teams() {
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
           <Button onClick={confirmDeleteMember} color="error" variant="contained">Delete</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Departments Section */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>Departments</Typography>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDepartmentDialog()}>
-            Add Department
-          </Button>
-        </Box>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Department Name</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {departments.map((dept) => (
-                <TableRow key={dept.id}>
-                  <TableCell>{dept.name}</TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Edit">
-                      <IconButton onClick={() => handleOpenDepartmentDialog(dept)} color="primary">
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton onClick={() => handleDepartmentDelete(dept.id)} color="error">
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-
-      {/* Department Dialog */}
-      <Dialog open={departmentDialogOpen} onClose={handleCloseDepartmentDialog} maxWidth="xs" fullWidth>
-        <DialogTitle>{editDepartmentMode ? 'Edit Department' : 'Add Department'}</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Department Name"
-            value={currentDepartment.name || ''}
-            onChange={e => setCurrentDepartment(d => ({ ...d, name: e.target.value }))}
-            fullWidth
-            required
-            disabled={departmentLoading}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDepartmentDialog} disabled={departmentLoading}>Cancel</Button>
-          <Button onClick={handleDepartmentSave} variant="contained" disabled={departmentLoading || !currentDepartment.name}>{editDepartmentMode ? 'Save' : 'Add'}</Button>
         </DialogActions>
       </Dialog>
     </Box>
