@@ -31,6 +31,12 @@ const FIELD_TYPES = [
 export default function Monitoring() {
   const [filter, setFilter] = useState('active');
   const [tasks, setTasks] = useState<any[]>([]);
+  // Filter states
+  const [inUseFilter, setInUseFilter] = useState('all'); // all, active, inactive
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [searchFilter, setSearchFilter] = useState('');
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [newTask, setNewTask] = useState({ name: '', responsibility: RESPONSIBILITIES[0], inUse: true });
@@ -46,17 +52,27 @@ export default function Monitoring() {
   // --- Detail Task Fields State ---
   const [fields, setFields] = useState<any[]>([]);
 
+  // When adding a new field, set default type to the first FIELD_TYPES value
   const handleAddField = () => {
     setFields(prev => [
       ...prev,
-      { id: Date.now(), type: '', label: '', config: {} }
+      { id: Date.now(), type: FIELD_TYPES[0].value, label: '', config: {} }
     ]);
   };
   const handleRemoveField = (id: number) => {
     setFields(prev => prev.filter(f => f.id !== id));
   };
+  // When changing the field type, reset config
   const handleFieldChange = (id: number, key: string, value: any) => {
-    setFields(prev => prev.map(f => f.id === id ? { ...f, [key]: value } : f));
+    setFields(prev => prev.map(f => {
+      if (f.id === id) {
+        if (key === 'type') {
+          return { ...f, type: value, config: {} };
+        }
+        return { ...f, [key]: value };
+      }
+      return f;
+    }));
   };
   const moveField = (from: number, to: number) => {
     setFields(prev => {
@@ -160,34 +176,74 @@ export default function Monitoring() {
   const handleNext = () => setStep(step + 1);
   const handleBack = () => setStep(step - 1);
   const handleSave = async () => {
-    if (!companyCode) return;
+    if (!companyCode) {
+      alert('Error: Company code not found. Please refresh the page.');
+      return;
+    }
+
+    // Validation
+    if (!newTask.name.trim()) {
+      alert('Please enter a task name.');
+      return;
+    }
+
+    if (taskType === 'checklist' && checklist.length === 0) {
+      alert('Please add at least one checklist item.');
+      return;
+    }
+
+    if (taskType === 'detailed' && fields.length === 0) {
+      alert('Please add at least one field to the detailed task.');
+      return;
+    }
+
+    if (details.frequency === 'One-time task' && (!oneTimeDate || !oneTimeTime)) {
+      alert('Please set both date and time for the one-time task.');
+      return;
+    }
+
+    // Prepare task data with timestamps
     const taskData = { 
       ...newTask, 
       type: taskType, 
       details: {
         ...details,
-        oneTimeDate: details.frequency === 'One-time task' ? oneTimeDate : undefined,
-        oneTimeTime: details.frequency === 'One-time task' ? oneTimeTime : undefined,
-        startTime: details.frequency !== 'One-time task' ? startTime : undefined,
+        ...(details.frequency === 'One-time task'
+          ? { oneTimeDate, oneTimeTime }
+          : { startTime }),
       },
-      checklist,
-      fields, // Include the dynamic fields
+      ...(taskType === 'checklist' ? { checklist } : {}),
+      ...(taskType === 'detailed' ? { fields } : {}),
       instructionSOPs: instructionSOPs.map(sop => ({ id: sop.id, title: sop.title, version: sop.version })),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: currentUser?.uid || auth.currentUser?.uid,
     };
+
     try {
       if (editMode && selectedTask?.id) {
-        await updateDoc(doc(db, 'companies', companyCode, 'monitoringTasks', selectedTask.id), taskData);
+        await updateDoc(doc(db, 'companies', companyCode, 'monitoringTasks', selectedTask.id), {
+          ...taskData,
+          updatedAt: new Date().toISOString(),
+        });
         setTasks(prev => prev.map(t => t.id === selectedTask.id ? { ...t, ...taskData } : t));
+        alert('Task updated successfully!');
       } else {
         const docRef = await addDoc(collection(db, 'companies', companyCode, 'monitoringTasks'), taskData);
         setTasks(prev => [{ ...taskData, id: docRef.id }, ...prev]);
+        alert('Task created successfully!');
       }
-      alert('Task saved to Firebase!');
     } catch (error: any) {
-      alert('Error saving task: ' + error.message);
+      console.error('Error saving task:', error);
+      alert('Error saving task: ' + (error.message || 'Unknown error occurred'));
+      return;
     }
+
+    // Reset form
     setDialogOpen(false);
     setStep(1);
+    setEditMode(false);
+    setSelectedTask(null);
     setNewTask({ name: '', responsibility: RESPONSIBILITIES[0], inUse: true });
     setTaskType('detailed');
     setDetails({ frequency: FREQUENCIES[0], oneTimeDate: '', oneTimeTime: '', startTime: '' });
@@ -214,26 +270,89 @@ export default function Monitoring() {
     'Review & Save',
   ];
 
+  // Get unique roles from tasks
+  const uniqueRoles = Array.from(new Set(tasks.map(t => t.responsibility).filter(Boolean)));
+
+  // Filtered tasks
+  const filteredTasks = tasks.filter(task => {
+    // In Use filter
+    if (inUseFilter === 'active' && !task.inUse) return false;
+    if (inUseFilter === 'inactive' && task.inUse) return false;
+    // Role filter
+    if (roleFilter !== 'all' && task.responsibility !== roleFilter) return false;
+    // Type filter
+    if (typeFilter !== 'all' && task.type !== typeFilter) return false;
+    // Search filter
+    if (searchFilter && !task.name.toLowerCase().includes(searchFilter.toLowerCase())) return false;
+    return true;
+  });
+
   return (
     <Box sx={{ maxWidth: 900, mx: 'auto', mt: 4 }}>
+      {/* Filter Bar */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel>In Use</InputLabel>
+          <Select
+            value={inUseFilter}
+            label="In Use"
+            onChange={e => setInUseFilter(e.target.value)}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="active">Active</MenuItem>
+            <MenuItem value="inactive">Inactive</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel>Role</InputLabel>
+          <Select
+            value={roleFilter}
+            label="Role"
+            onChange={e => setRoleFilter(e.target.value)}
+          >
+            <MenuItem value="all">All</MenuItem>
+            {uniqueRoles.map(role => (
+              <MenuItem key={role} value={role}>{role}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel>Task Type</InputLabel>
+          <Select
+            value={typeFilter}
+            label="Task Type"
+            onChange={e => setTypeFilter(e.target.value)}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="detailed">Detailed Task</MenuItem>
+            <MenuItem value="checklist">Checklist</MenuItem>
+          </Select>
+        </FormControl>
+        <TextField
+          size="small"
+          label="Search by Name"
+          value={searchFilter}
+          onChange={e => setSearchFilter(e.target.value)}
+          sx={{ minWidth: 180 }}
+        />
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => {
+            setInUseFilter('all');
+            setRoleFilter('all');
+            setTypeFilter('all');
+            setSearchFilter('');
+          }}
+        >
+          Clear Filters
+        </Button>
+      </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 700 }}>Monitoring tasks</Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button variant="contained" color="success" sx={{ fontWeight: 600, borderRadius: 2, px: 3 }} onClick={() => { setDialogOpen(true); setStep(1); }}>
-            Add monitoring task
-          </Button>
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Active tasks</InputLabel>
-            <Select
-              value={filter}
-              label="Active tasks"
-              onChange={e => setFilter(e.target.value)}
-            >
-              <MenuItem value="active">Active tasks</MenuItem>
-              <MenuItem value="inactive">Inactive tasks</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
+        <Button variant="contained" color="success" sx={{ fontWeight: 600, borderRadius: 2, px: 3 }} onClick={() => { setDialogOpen(true); setStep(1); }}>
+          Add monitoring task
+        </Button>
       </Box>
       <TableContainer component={Paper} sx={{ borderRadius: 3 }}>
         <Table>
@@ -246,7 +365,7 @@ export default function Monitoring() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {tasks.map((task, idx) => (
+            {filteredTasks.map((task, idx) => (
               <TableRow key={task.id || idx} hover>
                 <TableCell sx={{ fontWeight: 500, fontSize: '1.1rem' }}>{task.name}</TableCell>
                 <TableCell>
@@ -559,6 +678,17 @@ export default function Monitoring() {
                           onChange={e => handleFieldChange(field.id, 'label', e.target.value)}
                           sx={{ flex: 1, mr: 2 }}
                         />
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={field.config.required || false}
+                              onChange={e => handleFieldChange(field.id, 'config', { ...field.config, required: e.target.checked })}
+                              size="small"
+                            />
+                          }
+                          label="Required"
+                          sx={{ mr: 2 }}
+                        />
                         <IconButton color="error" onClick={() => handleRemoveField(field.id)}><span role="img" aria-label="delete">🗑️</span></IconButton>
                       </Box>
                       {/* Render field config based on type */}
@@ -626,7 +756,181 @@ export default function Monitoring() {
                           </FormControl>
                         </Box>
                       )}
-                      {/* ... other field types ... */}
+                      {field.type === 'text' && (
+                        <Box sx={{ mb: 2 }}>
+                          <FormControl size="small" fullWidth sx={{ mb: 2 }}>
+                            <InputLabel>Text Type</InputLabel>
+                            <Select
+                              value={field.config.textType || 'single'}
+                              label="Text Type"
+                              onChange={e => handleFieldChange(field.id, 'config', { ...field.config, textType: e.target.value })}
+                            >
+                              <MenuItem value="single">Single Line</MenuItem>
+                              <MenuItem value="multiline">Multi-line</MenuItem>
+                            </Select>
+                          </FormControl>
+                          <TextField
+                            size="small"
+                            label="Character Limit"
+                            type="number"
+                            value={field.config.maxLength || ''}
+                            onChange={e => handleFieldChange(field.id, 'config', { ...field.config, maxLength: e.target.value })}
+                            InputProps={{ endAdornment: <span>characters</span> }}
+                            fullWidth
+                          />
+                        </Box>
+                      )}
+                      {field.type === 'numeric' && (
+                        <Box sx={{ mb: 2 }}>
+                          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                            <TextField
+                              size="small"
+                              label="Minimum"
+                              type="number"
+                              value={field.config.min || ''}
+                              onChange={e => handleFieldChange(field.id, 'config', { ...field.config, min: e.target.value })}
+                            />
+                            <TextField
+                              size="small"
+                              label="Maximum"
+                              type="number"
+                              value={field.config.max || ''}
+                              onChange={e => handleFieldChange(field.id, 'config', { ...field.config, max: e.target.value })}
+                            />
+                            <TextField
+                              size="small"
+                              label="Decimal Places"
+                              type="number"
+                              inputProps={{ min: 0, max: 4 }}
+                              value={field.config.decimalPlaces || 0}
+                              onChange={e => {
+                                let val = parseInt(e.target.value, 10);
+                                if (isNaN(val) || val < 0) val = 0;
+                                if (val > 4) val = 4;
+                                handleFieldChange(field.id, 'config', { ...field.config, decimalPlaces: val });
+                              }}
+                            />
+                          </Box>
+                        </Box>
+                      )}
+                      {field.type === 'media' && (
+                        <Box sx={{ mb: 2 }}>
+                          <TextField
+                            label="Max number of photos"
+                            type="number"
+                            inputProps={{ min: 1, max: 5 }}
+                            value={field.config.maxPhotos || 1}
+                            onChange={e => {
+                              let val = parseInt(e.target.value, 10);
+                              if (isNaN(val) || val < 1) val = 1;
+                              if (val > 5) val = 5;
+                              handleFieldChange(field.id, 'config', { ...field.config, maxPhotos: val });
+                            }}
+                            fullWidth
+                            size="small"
+                          />
+                        </Box>
+                      )}
+                      {field.type === 'location' && (
+                        <Box sx={{ mb: 2 }}>
+                          <FormControl size="small" fullWidth sx={{ mb: 2 }}>
+                            <InputLabel>Location Type</InputLabel>
+                            <Select
+                              value={field.config.locationType || ''}
+                              label="Location Type"
+                              onChange={e => handleFieldChange(field.id, 'config', { ...field.config, locationType: e.target.value, locationId: '', locationName: '' })}
+                            >
+                              <MenuItem value="area">Area</MenuItem>
+                              <MenuItem value="room">Room</MenuItem>
+                              <MenuItem value="equipment">Equipment</MenuItem>
+                            </Select>
+                          </FormControl>
+                          {field.config.locationType && (
+                            <FormControl size="small" fullWidth>
+                              <InputLabel>{`Select ${field.config.locationType.charAt(0).toUpperCase() + field.config.locationType.slice(1)}`}</InputLabel>
+                              <Select
+                                value={field.config.locationId || ''}
+                                label={`Select ${field.config.locationType}`}
+                                onChange={e => {
+                                  let selectedName = '';
+                                  if (field.config.locationType === 'area') {
+                                    const found = areas.find(a => a.id === e.target.value);
+                                    selectedName = found ? found.name : '';
+                                  } else if (field.config.locationType === 'room') {
+                                    const found = rooms.find(r => r.id === e.target.value);
+                                    selectedName = found ? found.name : '';
+                                  } else if (field.config.locationType === 'equipment') {
+                                    const found = equipment.find(eq => eq.id === e.target.value);
+                                    selectedName = found ? found.name : '';
+                                  }
+                                  handleFieldChange(field.id, 'config', { ...field.config, locationId: e.target.value, locationName: selectedName });
+                                }}
+                              >
+                                {(field.config.locationType === 'area' ? areas : field.config.locationType === 'room' ? rooms : equipment).map((loc: any) => (
+                                  <MenuItem key={loc.id} value={loc.id}>{loc.name}</MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          )}
+                        </Box>
+                      )}
+                      {field.type === 'single' && (
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="subtitle2">Option</Typography>
+                          <TextField
+                            size="small"
+                            value={field.config.options ? field.config.options[0] || '' : ''}
+                            onChange={e => handleFieldChange(field.id, 'config', { ...field.config, options: [e.target.value] })}
+                            sx={{ flex: 1, mr: 1 }}
+                          />
+                        </Box>
+                      )}
+                      {field.type === 'multi' && (
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="subtitle2">Options</Typography>
+                          {(field.config.options || ['']).map((opt: string, i: number) => (
+                            <Box key={i} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                              <TextField
+                                size="small"
+                                value={opt}
+                                onChange={e => {
+                                  const newOpts = [...(field.config.options || [''])];
+                                  newOpts[i] = e.target.value;
+                                  handleFieldChange(field.id, 'config', { ...field.config, options: newOpts });
+                                }}
+                                sx={{ flex: 1, mr: 1 }}
+                              />
+                              <IconButton size="small" color="error" onClick={() => {
+                                const newOpts = [...(field.config.options || [''])];
+                                newOpts.splice(i, 1);
+                                handleFieldChange(field.id, 'config', { ...field.config, options: newOpts });
+                              }} disabled={(field.config.options || ['']).length === 1}>
+                                <span role="img" aria-label="delete">🗑️</span>
+                              </IconButton>
+                            </Box>
+                          ))}
+                          <Button size="small" onClick={() => handleFieldChange(field.id, 'config', { ...field.config, options: [...(field.config.options || ['']), ''] })}>+ Add Option</Button>
+                        </Box>
+                      )}
+                      {field.type === 'product' && (
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="subtitle2" sx={{ mb: 1 }}>Product Selection</Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            Products will be fetched from your company's product catalog
+                          </Typography>
+                          <FormControl size="small" fullWidth>
+                            <InputLabel>Allow Multiple Selection</InputLabel>
+                            <Select
+                              value={field.config.allowMultiple ? 'true' : 'false'}
+                              label="Allow Multiple Selection"
+                              onChange={e => handleFieldChange(field.id, 'config', { ...field.config, allowMultiple: e.target.value === 'true' })}
+                            >
+                              <MenuItem value="false">Single Product</MenuItem>
+                              <MenuItem value="true">Multiple Products</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Box>
+                      )}
                     </Box>
                   ))}
                   <Button variant="outlined" onClick={handleAddField} sx={{ mt: 2 }}>+ Add Field</Button>
@@ -727,6 +1031,7 @@ export default function Monitoring() {
             color="primary"
             variant="contained"
             fullWidth
+            sx={{ mb: 2 }}
             onClick={() => {
               setEditMode(true);
               setDialogOpen(true);
@@ -748,6 +1053,40 @@ export default function Monitoring() {
             }}
           >
             Edit
+          </Button>
+          <Button
+            color="secondary"
+            variant="outlined"
+            fullWidth
+            onClick={async () => {
+              if (!selectedTask || !companyCode) return;
+              try {
+                // Prepare duplicate data
+                const duplicate = {
+                  ...selectedTask,
+                  name: `${selectedTask.name} (Copy)` || 'Untitled (Copy)',
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                  createdBy: currentUser?.uid || auth.currentUser?.uid,
+                };
+                // Remove id from duplicate
+                delete duplicate.id;
+                // Remove any undefined fields (especially checklist/fields)
+                if (!duplicate.fields) delete duplicate.fields;
+                if (!duplicate.checklist) delete duplicate.checklist;
+                // Save to Firebase
+                const docRef = await addDoc(collection(db, 'companies', companyCode, 'monitoringTasks'), duplicate);
+                setTasks(prev => [{ ...duplicate, id: docRef.id }, ...prev]);
+                alert('Task duplicated successfully!');
+                setActionModalOpen(false);
+              } catch (error) {
+                let msg = 'Unknown error';
+                if (error instanceof Error) msg = error.message;
+                alert('Error duplicating task: ' + msg);
+              }
+            }}
+          >
+            Duplicate
           </Button>
         </DialogContent>
       </Dialog>
