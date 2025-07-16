@@ -138,17 +138,23 @@ export default function Setup() {
   const [buEditValues, setBuEditValues] = useState<BusinessUnitDetails>(initialBusinessUnit);
   const [dynamicBuFields, setDynamicBuFields] = useState(buFields.filter(f => !['unitName','address','country','phone','email','language','timeZone'].includes(f.key)));
 
+  const [userRole, setUserRole] = useState('');
+  const [alertOpen, setAlertOpen] = useState(false);
+
   // --- Tab Change ---
   const handleTabChange = (_: any, newValue: number) => setTab(newValue);
 
-  // --- Fetch Company Code ---
+  // --- Fetch Company Code and User Role ---
   useEffect(() => {
     const fetchCurrentUser = async () => {
       const user = auth.currentUser;
       if (user) {
         const usersSnap = await getDocs(collectionGroup(db, 'users'));
         const userDoc = usersSnap.docs.find(doc => doc.data().uid === user.uid);
-        if (userDoc) setCompanyCode(userDoc.data().companyCode);
+        if (userDoc) {
+          setCompanyCode(userDoc.data().companyCode);
+          setUserRole(userDoc.data().role || '');
+        }
       }
     };
     fetchCurrentUser();
@@ -186,6 +192,10 @@ export default function Setup() {
 
   // --- Company Edit Handlers ---
   const handleEdit = () => {
+    if (userRole !== 'owner') {
+      setAlertOpen(true);
+      return;
+    }
     setEditValues(company);
     setEditMode(true);
   };
@@ -538,6 +548,16 @@ export default function Setup() {
           </Paper>
         </Box>
       )}
+      {/* Alert Dialog for non-owners */}
+      <Dialog open={alertOpen} onClose={() => setAlertOpen(false)}>
+        <DialogTitle>Permission Denied</DialogTitle>
+        <DialogContent>
+          <Typography>You do not have permission to edit company details. Only the owner can edit this information.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAlertOpen(false)} color="primary">OK</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 } 

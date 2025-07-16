@@ -1,5 +1,5 @@
 {
-  "name": "admin-panel",
+  "name": "haccp-admin",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -46,5 +46,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@date-io/date-fns": "^3.2.1",
+    "@mui/x-date-pickers": "^8.8.0",
+    "@mui/x-date-pickers-pro": "^8.8.0",
+    "date-fns": "^4.1.0"
   }
 }

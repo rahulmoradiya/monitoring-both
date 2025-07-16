@@ -43,9 +43,10 @@ interface TeamMember {
   id: string;
   name: string;
   email: string;
+  departmentId: string;
+  departmentName: string;
   role: string;
   responsibilities: string[];
-  invitationStatus?: 'Pending' | 'Accepted' | 'Declined';
 }
 
 const initialRoles: Role[] = [
@@ -71,17 +72,19 @@ const initialMembers: TeamMember[] = [
     id: '1', 
     name: 'Rahul Moradiya', 
     email: 'rahul@example.com', 
+    departmentId: '1',
+    departmentName: 'IT',
     role: 'Admin',
     responsibilities: ['System configuration', 'User management', 'Data access control'],
-    invitationStatus: 'Accepted',
   },
   { 
     id: '2', 
     name: 'Jane Doe', 
     email: 'jane@example.com', 
+    departmentId: '2',
+    departmentName: 'HR',
     role: 'Manager',
     responsibilities: ['Team supervision', 'Project coordination', 'Reporting'],
-    invitationStatus: 'Pending',
   },
 ];
 
@@ -102,6 +105,11 @@ export default function Teams() {
   const [deptDialogOpen, setDeptDialogOpen] = useState(false);
   const [newDept, setNewDept] = useState('');
   const [deptToDelete, setDeptToDelete] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState('');
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [editDeptDialogOpen, setEditDeptDialogOpen] = useState(false);
+  const [deptToEdit, setDeptToEdit] = useState<{ id: string; name: string } | null>(null);
+  const [editDeptName, setEditDeptName] = useState('');
 
   // Member management
   const handleMemberOpen = () => {
@@ -132,7 +140,7 @@ export default function Teams() {
     }));
   };
   const handleMemberSave = async () => {
-    if (!currentMember.email || !currentMember.role || (!editMode && !currentMember.password)) return;
+    if (!currentMember.name || !currentMember.departmentId || !currentMember.role || !currentMember.email || (!editMode && !currentMember.password)) return;
     if (!editMode) {
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, currentMember.email as string, currentMember.password as string);
@@ -142,8 +150,11 @@ export default function Teams() {
             uid: newUser.uid,
             email: currentMember.email,
             name: currentMember.name || '',
+            departmentId: currentMember.departmentId || '',
+            departmentName: currentMember.departmentName || '',
             companyCode: currentUser.companyCode,
-            role: 'member',
+            role: currentMember.role,
+            responsibilities: currentMember.responsibilities || [],
             createdAt: new Date(),
           });
         }
@@ -151,21 +162,47 @@ export default function Teams() {
         alert(error.message);
         return;
       }
-    }
-    setMembers((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        name: '',
+      setMembers((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          name: currentMember.name!,
+          email: currentMember.email!,
+          departmentId: currentMember.departmentId!,
+          departmentName: currentMember.departmentName!,
+          role: currentMember.role!,
+          responsibilities: currentMember.responsibilities || [],
+        },
+      ]);
+    } else {
+      // Edit mode: update existing member in state and Firestore
+      setMembers((prev) => prev.map(m => m.id === currentMember.id ? {
+        ...m,
+        name: currentMember.name!,
         email: currentMember.email!,
+        departmentId: currentMember.departmentId!,
+        departmentName: currentMember.departmentName!,
         role: currentMember.role!,
         responsibilities: currentMember.responsibilities || [],
-        invitationStatus: currentMember.invitationStatus || 'Pending',
-      },
-    ]);
+      } : m));
+      if (companyCode && currentMember.id) {
+        await updateDoc(doc(db, 'companies', companyCode, 'users', currentMember.id), {
+          name: currentMember.name!,
+          email: currentMember.email!,
+          departmentId: currentMember.departmentId!,
+          departmentName: currentMember.departmentName!,
+          role: currentMember.role!,
+          responsibilities: currentMember.responsibilities || [],
+        });
+      }
+    }
     handleMemberClose();
   };
   const handleMemberDelete = (id: string) => {
+    if (userRole !== 'owner') {
+      setAlertOpen(true);
+      return;
+    }
     const member = members.find(m => m.id === id) || null;
     setMemberToDelete(member);
     setDeleteDialogOpen(true);
@@ -244,8 +281,30 @@ export default function Teams() {
     }
     handleRoleClose();
   };
-  const handleRoleDelete = (id: string) => {
-    setRoles((prev) => prev.filter((r) => r.id !== id));
+  const handleRoleDelete = async (id: string) => {
+    if (userRole !== 'owner') {
+      setAlertOpen(true);
+      return;
+    }
+    // Remove role from local state
+    setRoles(prev => prev.filter(r => r.id !== id));
+    // Update team members with this role
+    setMembers(prev => prev.map(m => m.role === roles.find(r => r.id === id)?.name ? { ...m, role: 'not set', responsibilities: ['not set'] } : m));
+    // Optionally, update in Firestore as well
+    if (!companyCode) return;
+    const membersSnap = await getDocs(collection(db, 'companies', companyCode, 'users'));
+    const deletedRole = roles.find(r => r.id === id)?.name;
+    for (const docSnap of membersSnap.docs) {
+      const data = docSnap.data();
+      if (data.role === deletedRole) {
+        await updateDoc(doc(db, 'companies', companyCode, 'users', docSnap.id), {
+          role: 'not set',
+          responsibilities: ['not set'],
+        });
+      }
+    }
+    // Remove role from Firestore
+    await deleteDoc(doc(db, 'companies', companyCode, 'roles', id));
   };
 
   // Invitation logic
@@ -276,11 +335,41 @@ export default function Teams() {
     const deptSnap = await getDocs(collection(db, 'companies', companyCode, 'departments'));
     setDepartments(deptSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as { id: string; name: string })));
   };
+  const handleEditDepartment = (dept: { id: string; name: string }) => {
+    setDeptToEdit(dept);
+    setEditDeptName(dept.name);
+    setEditDeptDialogOpen(true);
+  };
+  const handleSaveEditDepartment = async () => {
+    if (!deptToEdit || !editDeptName.trim() || !companyCode) return;
+    await updateDoc(doc(db, 'companies', companyCode, 'departments', deptToEdit.id), { name: editDeptName.trim() });
+    setDepartments(prev => prev.map(d => d.id === deptToEdit.id ? { ...d, name: editDeptName.trim() } : d));
+    setEditDeptDialogOpen(false);
+    setDeptToEdit(null);
+    setEditDeptName('');
+  };
   const handleDeleteDepartment = async (id: string) => {
+    if (userRole !== 'owner') {
+      setAlertOpen(true);
+      return;
+    }
     if (!companyCode) return;
     await deleteDoc(doc(db, 'companies', companyCode, 'departments', id));
     setDepartments(prev => prev.filter(d => d.id !== id));
     setDeptToDelete(null);
+    // Update team members with this department
+    setMembers(prev => prev.map(m => m.departmentId === id ? { ...m, departmentId: 'not set', departmentName: 'not set' } : m));
+    // Optionally, update in Firestore as well
+    const membersSnap = await getDocs(collection(db, 'companies', companyCode, 'users'));
+    for (const docSnap of membersSnap.docs) {
+      const data = docSnap.data();
+      if (data.departmentId === id) {
+        await updateDoc(doc(db, 'companies', companyCode, 'users', docSnap.id), {
+          departmentId: 'not set',
+          departmentName: 'not set',
+        });
+      }
+    }
   };
 
   useEffect(() => {
@@ -293,6 +382,7 @@ export default function Teams() {
         if (userDoc) {
           setCurrentUser(userDoc.data());
           setCompanyCode(userDoc.data().companyCode);
+          setUserRole(userDoc.data().role || '');
         }
       }
     };
@@ -328,9 +418,10 @@ export default function Teams() {
           id: doc.id,
           name: data.name || '',
           email: data.email || '',
+          departmentId: data.departmentId || '',
+          departmentName: data.departmentName || '',
           role: data.role || '',
           responsibilities: data.responsibilities || [],
-          invitationStatus: data.invitationStatus || 'Pending',
         } as TeamMember;
       });
       setMembers(membersList);
@@ -392,7 +483,13 @@ export default function Teams() {
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete">
-                      <IconButton onClick={() => handleRoleDelete(role.id)} color="error">
+                      <IconButton color="error" onClick={() => {
+                        if (userRole !== 'owner') {
+                          setAlertOpen(true);
+                        } else {
+                          handleRoleDelete(role.id);
+                        }
+                      }}>
                         <DeleteIcon />
                       </IconButton>
                     </Tooltip>
@@ -422,7 +519,6 @@ export default function Teams() {
                 <TableCell>Email</TableCell>
                 <TableCell>Role</TableCell>
                 <TableCell>Responsibilities</TableCell>
-                <TableCell>Invitation Status</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -439,7 +535,6 @@ export default function Teams() {
                       ))}
                     </Box>
                   </TableCell>
-                  <TableCell>{member.invitationStatus || '-'}</TableCell>
                   <TableCell align="right">
                     <Tooltip title="Edit">
                       <IconButton onClick={() => handleMemberEdit(member)} color="primary">
@@ -448,7 +543,13 @@ export default function Teams() {
                     </Tooltip>
                     {member.role !== 'owner' && (
                       <Tooltip title="Delete">
-                        <IconButton onClick={() => handleMemberDelete(member.id)} color="error">
+                        <IconButton color="error" onClick={() => {
+                          if (userRole !== 'owner') {
+                            setAlertOpen(true);
+                          } else {
+                            handleMemberDelete(member.id);
+                          }
+                        }}>
                           <DeleteIcon />
                         </IconButton>
                       </Tooltip>
@@ -482,9 +583,22 @@ export default function Teams() {
                 <TableRow key={dept.id}>
                   <TableCell>{dept.name}</TableCell>
                   <TableCell align="right">
-                    <IconButton color="error" onClick={() => setDeptToDelete(dept.id)}>
-                      <DeleteIcon />
-                    </IconButton>
+                    <Tooltip title="Edit">
+                      <IconButton color="primary" onClick={() => handleEditDepartment(dept)}>
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton color="error" onClick={() => {
+                        if (userRole !== 'owner') {
+                          setAlertOpen(true);
+                        } else {
+                          setDeptToDelete(dept.id);
+                        }
+                      }}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))}
@@ -508,6 +622,23 @@ export default function Teams() {
             <Button onClick={handleAddDepartment} variant="contained" disabled={!newDept}>Add</Button>
           </DialogActions>
         </Dialog>
+        {/* Edit Department Dialog */}
+        <Dialog open={editDeptDialogOpen} onClose={() => setEditDeptDialogOpen(false)}>
+          <DialogTitle>Edit Department</DialogTitle>
+          <DialogContent>
+            <TextField
+              label="Department Name"
+              value={editDeptName}
+              onChange={e => setEditDeptName(e.target.value)}
+              fullWidth
+              autoFocus
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditDeptDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveEditDepartment} variant="contained" disabled={!editDeptName.trim()}>Save</Button>
+          </DialogActions>
+        </Dialog>
         {/* Delete Department Confirmation Dialog */}
         <Dialog open={!!deptToDelete} onClose={() => setDeptToDelete(null)}>
           <DialogTitle>Delete Department</DialogTitle>
@@ -525,14 +656,43 @@ export default function Teams() {
       <Dialog open={memberDialogOpen} onClose={handleMemberClose} maxWidth="sm" fullWidth>
         <DialogTitle>{editMode ? 'Edit Member' : 'Add Member'}</DialogTitle>
         <DialogContent>
-          <FormControl fullWidth margin="dense">
+          <TextField
+            margin="dense"
+            label="Name"
+            name="name"
+            value={currentMember.name || ''}
+            onChange={handleMemberInputChange}
+            fullWidth
+            required
+            autoFocus
+          />
+          <FormControl fullWidth margin="dense" required>
+            <InputLabel>Department</InputLabel>
+            <Select
+              name="departmentId"
+              value={currentMember.departmentId || ''}
+              label="Department"
+              onChange={e => {
+                const dept = departments.find(d => d.id === e.target.value);
+                setCurrentMember(prev => ({
+                  ...prev,
+                  departmentId: dept?.id || '',
+                  departmentName: dept?.name || ''
+                }));
+              }}
+            >
+              {departments.map((dept) => (
+                <MenuItem key={dept.id} value={dept.id}>{dept.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth margin="dense" required>
             <InputLabel>Role</InputLabel>
             <Select
               name="role"
               value={currentMember.role || ''}
               label="Role"
               onChange={handleMemberSelectChange}
-              required
             >
               {roles.map((role) => (
                 <MenuItem key={role.id} value={role.name}>{role.name}</MenuItem>
@@ -574,7 +734,13 @@ export default function Teams() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleMemberClose}>Cancel</Button>
-          <Button onClick={handleMemberSave} variant="contained">{editMode ? 'Save' : 'Add'}</Button>
+          <Button onClick={handleMemberSave} variant="contained" disabled={
+            !currentMember.name ||
+            !currentMember.departmentId ||
+            !currentMember.role ||
+            !currentMember.email ||
+            (!editMode && !currentMember.password)
+          }>{editMode ? 'Save' : 'Add'}</Button>
         </DialogActions>
       </Dialog>
 
@@ -632,6 +798,17 @@ export default function Teams() {
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
           <Button onClick={confirmDeleteMember} color="error" variant="contained">Delete</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Alert Dialog for non-owners trying to delete */}
+      <Dialog open={alertOpen} onClose={() => setAlertOpen(false)}>
+        <DialogTitle>Permission Denied</DialogTitle>
+        <DialogContent>
+          <Typography>You do not have permission to delete team members. Only the owner can perform this action.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAlertOpen(false)} color="primary">OK</Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -6,7 +6,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import { auth, db, storage } from '../firebase';
 import { updateProfile } from 'firebase/auth';
-import { doc, getDocs, collectionGroup } from 'firebase/firestore';
+import { doc, getDocs, collectionGroup, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function Profile() {
@@ -22,6 +22,8 @@ export default function Profile() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [newPhoto, setNewPhoto] = useState<File | null>(null);
+  const [departmentName, setDepartmentName] = useState('');
+  const [responsibilities, setResponsibilities] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -36,6 +38,9 @@ export default function Profile() {
           if (userDoc) {
             setRole(userDoc.data().role || 'user');
             setCompanyCode(userDoc.data().companyCode || '');
+            setDepartmentName(userDoc.data().departmentName || '');
+            setResponsibilities(userDoc.data().responsibilities || []);
+            setDisplayName(userDoc.data().name || user?.displayName || '');
           }
         }
       } catch (err: any) {
@@ -83,6 +88,19 @@ export default function Profile() {
         photoURL: updatedPhotoURL,
       });
       setPhotoURL(updatedPhotoURL);
+      // Update Firestore user document with all details
+      const usersSnap = await getDocs(collectionGroup(db, 'users'));
+      const userDoc = usersSnap.docs.find(doc => doc.data().uid === user.uid);
+      if (userDoc) {
+        const userData = userDoc.data();
+        const companyCode = userData.companyCode;
+        const userJson = {
+          ...userData,
+          name: displayName,
+          photoURL: updatedPhotoURL,
+        };
+        await setDoc(doc(db, 'companies', companyCode, 'users', user.uid), userJson);
+      }
       setEditMode(false);
       setSuccess('Profile updated!');
     } catch (err: any) {
@@ -132,7 +150,17 @@ export default function Profile() {
               inputProps={{ maxLength: 40 }}
             />
           ) : (
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{displayName || email}</Typography>
+            <>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{displayName || email}</Typography>
+              <Typography variant="subtitle1" sx={{ color: '#555', mb: 1 }}>Role: {role}</Typography>
+              <Typography variant="subtitle1" sx={{ color: '#555', mb: 1 }}>Department: {departmentName}</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+                {responsibilities.length > 0 && <Typography variant="subtitle1" sx={{ color: '#555', mr: 1 }}>Responsibilities:</Typography>}
+                {responsibilities.map((resp, idx) => (
+                  <Chip key={idx} label={resp} size="small" variant="outlined" />
+                ))}
+              </Box>
+            </>
           )}
           <Chip label={role} color="primary" variant="outlined" sx={{ mb: 2, fontWeight: 600, textTransform: 'capitalize' }} />
           <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>{email}</Typography>

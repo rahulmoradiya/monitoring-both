@@ -77,7 +77,7 @@ export default function Tasks() {
         if (userDoc) {
           const userData = userDoc.data();
           setCompanyCode(userData.companyCode);
-          setCanEdit(userData.role === 'admin' || userData.role === 'owner' || userData.role === 'Task Manager');
+          setCanEdit(true); // Allow all users to add tasks
           // Fetch roles
           const rolesSnap = await getDocs(collection(db, 'companies', userData.companyCode, 'roles'));
           setRoles(rolesSnap.docs.map(doc => doc.data().name));
