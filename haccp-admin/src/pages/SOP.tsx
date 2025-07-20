@@ -266,10 +266,7 @@ export default function SOP() {
               <TableCell>Title</TableCell>
               <TableCell>Version</TableCell>
               <TableCell>Description</TableCell>
-              <TableCell>Department</TableCell>
               <TableCell>File</TableCell>
-              <TableCell>Assigned Roles</TableCell>
-              <TableCell>Assigned Users</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -279,22 +276,12 @@ export default function SOP() {
                 <TableCell>{sop.title}</TableCell>
                 <TableCell>{sop.version}</TableCell>
                 <TableCell>{sop.description}</TableCell>
-                <TableCell>{sop.department}</TableCell>
                 <TableCell>
                   {sop.fileUrl && (
                     <IconButton href={sop.fileUrl} target="_blank" rel="noopener" download={sop.fileName}>
                       <Download />
                     </IconButton>
                   )}
-                </TableCell>
-                <TableCell>
-                  {sop.assignedRoles?.map(role => <Chip key={role} label={role} size="small" sx={{ mr: 0.5 }} />)}
-                </TableCell>
-                <TableCell>
-                  {sop.assignedUsers?.map(uid => {
-                    const user = users.find(u => u.uid === uid);
-                    return user ? <Chip key={uid} label={user.name} size="small" sx={{ mr: 0.5 }} /> : null;
-                  })}
                 </TableCell>
                 <TableCell align="right">
                   <IconButton onClick={() => handleOpenDialog(sop)}><Edit /></IconButton>
@@ -331,16 +318,6 @@ export default function SOP() {
             multiline
             minRows={2}
           />
-          <FormControl fullWidth>
-            <InputLabel>Department</InputLabel>
-            <Select
-              value={currentSOP.department || ''}
-              label="Department"
-              onChange={e => setCurrentSOP(s => ({ ...s, department: e.target.value }))}
-            >
-              {departments.map(dept => <MenuItem key={dept.id} value={dept.name}>{dept.name}</MenuItem>)}
-            </Select>
-          </FormControl>
           <Button
             component="label"
             variant="outlined"
@@ -350,39 +327,6 @@ export default function SOP() {
             {file ? file.name : currentSOP.fileName || 'Upload File'}
             <input type="file" hidden onChange={handleFileChange} />
           </Button>
-          <FormControl fullWidth>
-            <InputLabel>Assign to Roles</InputLabel>
-            <Select
-              multiple
-              value={currentSOP.assignedRoles || []}
-              onChange={e => setCurrentSOP(s => ({ ...s, assignedRoles: e.target.value as string[] }))}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {(selected as string[]).map(value => <Chip key={value} label={value} />)}
-                </Box>
-              )}
-            >
-              {roles.map(role => <MenuItem key={role} value={role}>{role}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <FormControl fullWidth>
-            <InputLabel>Assign to Users</InputLabel>
-            <Select
-              multiple
-              value={currentSOP.assignedUsers || []}
-              onChange={e => setCurrentSOP(s => ({ ...s, assignedUsers: e.target.value as string[] }))}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {(selected as string[]).map(uid => {
-                    const user = users.find(u => u.uid === uid);
-                    return user ? <Chip key={uid} label={user.name} /> : null;
-                  })}
-                </Box>
-              )}
-            >
-              {users.map(user => <MenuItem key={user.uid} value={user.uid}>{user.name}</MenuItem>)}
-            </Select>
-          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog} disabled={uploading}>Cancel</Button>

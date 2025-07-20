@@ -29,7 +29,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import type { SelectChangeEvent } from '@mui/material/Select';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { setDoc, doc, getDoc, getDocs, collectionGroup, collection, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
@@ -110,6 +110,7 @@ export default function Teams() {
   const [editDeptDialogOpen, setEditDeptDialogOpen] = useState(false);
   const [deptToEdit, setDeptToEdit] = useState<{ id: string; name: string } | null>(null);
   const [editDeptName, setEditDeptName] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
 
   // Member management
   const handleMemberOpen = () => {
@@ -140,9 +141,10 @@ export default function Teams() {
     }));
   };
   const handleMemberSave = async () => {
-    if (!currentMember.name || !currentMember.departmentId || !currentMember.role || !currentMember.email || (!editMode && !currentMember.password)) return;
+    if (!currentMember.name || !currentMember.departmentId || !currentMember.role || !currentMember.email || (!editMode && !currentMember.password) || (!editMode && !adminPassword)) return;
     if (!editMode) {
       try {
+        const adminEmail = auth.currentUser?.email;
         const userCredential = await createUserWithEmailAndPassword(auth, currentMember.email as string, currentMember.password as string);
         const newUser = userCredential.user;
         if (currentUser?.companyCode) {
@@ -157,6 +159,10 @@ export default function Teams() {
             responsibilities: currentMember.responsibilities || [],
             createdAt: new Date(),
           });
+        }
+        // After creating the new user, sign back in as admin
+        if (adminEmail && adminPassword) {
+          await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
         }
       } catch (error: any) {
         alert(error.message);
@@ -174,28 +180,29 @@ export default function Teams() {
           responsibilities: currentMember.responsibilities || [],
         },
       ]);
-    } else {
-      // Edit mode: update existing member in state and Firestore
-      setMembers((prev) => prev.map(m => m.id === currentMember.id ? {
-        ...m,
+      setAdminPassword(''); // Clear admin password after use
+    }
+    // Edit mode: update existing member in state and Firestore
+    setMembers((prev) => prev.map(m => m.id === currentMember.id ? {
+      ...m,
+      name: currentMember.name!,
+      email: currentMember.email!,
+      departmentId: currentMember.departmentId!,
+      departmentName: currentMember.departmentName!,
+      role: currentMember.role!,
+      responsibilities: currentMember.responsibilities || [],
+    } : m));
+    if (companyCode && currentMember.id) {
+      await updateDoc(doc(db, 'companies', companyCode, 'users', currentMember.id), {
         name: currentMember.name!,
         email: currentMember.email!,
         departmentId: currentMember.departmentId!,
         departmentName: currentMember.departmentName!,
         role: currentMember.role!,
         responsibilities: currentMember.responsibilities || [],
-      } : m));
-      if (companyCode && currentMember.id) {
-        await updateDoc(doc(db, 'companies', companyCode, 'users', currentMember.id), {
-          name: currentMember.name!,
-          email: currentMember.email!,
-          departmentId: currentMember.departmentId!,
-          departmentName: currentMember.departmentName!,
-          role: currentMember.role!,
-          responsibilities: currentMember.responsibilities || [],
-        });
-      }
+      });
     }
+    // Do NOT update setCurrentUser with new member's data here
     handleMemberClose();
   };
   const handleMemberDelete = (id: string) => {
@@ -719,6 +726,19 @@ export default function Teams() {
               fullWidth
               required
               type="password"
+            />
+          )}
+          {!editMode && (
+            <TextField
+              margin="dense"
+              label="Your Admin Password (for re-authentication)"
+              name="adminPassword"
+              value={adminPassword}
+              onChange={e => setAdminPassword(e.target.value)}
+              fullWidth
+              required
+              type="password"
+              helperText="Please enter your own password to stay logged in after adding a member."
             />
           )}
           {currentMember.role && (

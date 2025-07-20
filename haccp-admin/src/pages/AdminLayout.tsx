@@ -82,6 +82,11 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
+              <ListItemButton component={NavLink} to="/admin/production-planning">
+                <ListItemText primary="Monitoring Planning" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
               <ListItemButton component={NavLink} to="/admin/setup">
                 <ListItemText primary="Setup" />
               </ListItemButton>

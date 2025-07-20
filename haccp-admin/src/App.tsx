@@ -15,6 +15,7 @@ import Layout from './pages/Layout';
 import SOP from './pages/SOP';
 import Tasks from './pages/Tasks';
 import Departments from './pages/Departments';
+import ProductionPlanning from './pages/ProductionPlanning';
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -74,6 +75,7 @@ function App() {
         <Route path="/login" element={!user ? <LoginPage onLogin={() => setUser(auth.currentUser)} /> : <Navigate to="/admin/overview" />} />
         <Route path="/admin" element={user ? <AdminLayout companyDetails={companyDetails} /> : <Navigate to="/login" /> }>
           <Route path="overview" element={<Overview />} />
+          <Route path="production-planning" element={<ProductionPlanning />} />
           <Route path="setup" element={<Setup />} />
           <Route path="teams" element={<Teams />} />
           <Route path="profile" element={<Profile />} />

@@ -13,7 +13,7 @@ import Stepper from '@mui/material/Stepper';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 
-const RESPONSIBILITIES = ['Production Staff', 'Management'];
+// Remove hardcoded RESPONSIBILITIES. We'll fetch roles from Firestore.
 const FREQUENCIES = ['Once a day', 'Once a week', 'Once a month', 'One-time task'];
 
 const FIELD_TYPES = [
@@ -34,14 +34,13 @@ export default function Monitoring() {
   // Filter states
   const [inUseFilter, setInUseFilter] = useState('all'); // all, active, inactive
   const [roleFilter, setRoleFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
   const [searchFilter, setSearchFilter] = useState('');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [step, setStep] = useState(1);
-  const [newTask, setNewTask] = useState({ name: '', responsibility: RESPONSIBILITIES[0], inUse: true });
+  const [newTask, setNewTask] = useState({ name: '', responsibility: '', inUse: true });
   const [taskType, setTaskType] = useState<'detailed' | 'checklist'>('detailed');
-  const [details, setDetails] = useState({ frequency: FREQUENCIES[0], oneTimeDate: '', oneTimeTime: '', startTime: '' });
+  const [details, setDetails] = useState({ frequency: FREQUENCIES[0], oneTimeDate: '', oneTimeTime: '', startTime: '', startDate: '' });
   const [checklist, setChecklist] = useState([{ title: '', allowNotDone: false, locationType: '', locationId: '', locationName: '' }]);
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
@@ -104,6 +103,9 @@ export default function Monitoring() {
   // Add state for startTime
   const [startTime, setStartTime] = useState('');
 
+  // State for roles fetched from Firestore
+  const [roles, setRoles] = useState<string[]>([]);
+
   // Fetch Areas, Rooms, Equipment when companyCode changes
   useEffect(() => {
     if (!companyCode) return;
@@ -127,6 +129,12 @@ export default function Monitoring() {
   // Fetch SOPs when companyCode changes
   useEffect(() => {
     if (!companyCode) return;
+    // Fetch roles from Firestore
+    const fetchRoles = async () => {
+      const rolesSnap = await getDocs(collection(db, 'companies', companyCode, 'roles'));
+      setRoles(rolesSnap.docs.map(doc => doc.data().name));
+    };
+    fetchRoles();
     const fetchSOPs = async () => {
       try {
         const sopsSnap = await getDocs(collection(db, 'companies', companyCode, 'sops'));
@@ -163,9 +171,16 @@ export default function Monitoring() {
     if (!companyCode) return;
     const fetchTasks = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'companies', companyCode, 'monitoringTasks'));
-        const fetchedTasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setTasks(fetchedTasks);
+        // Fetch from both collections
+        const detailedSnapshot = await getDocs(collection(db, 'companies', companyCode, 'detailedCreation'));
+        const checklistSnapshot = await getDocs(collection(db, 'companies', companyCode, 'checklistCreation'));
+        
+        const detailedTasks = detailedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const checklistTasks = checklistSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Combine both collections
+        const allTasks = [...detailedTasks, ...checklistTasks];
+        setTasks(allTasks);
       } catch (error) {
         console.error('Error fetching tasks:', error);
       }
@@ -210,7 +225,7 @@ export default function Monitoring() {
         ...details,
         ...(details.frequency === 'One-time task'
           ? { oneTimeDate, oneTimeTime }
-          : { startTime }),
+          : { startDate: details.startDate, startTime }),
       },
       ...(taskType === 'checklist' ? { checklist } : {}),
       ...(taskType === 'detailed' ? { fields } : {}),
@@ -221,15 +236,18 @@ export default function Monitoring() {
     };
 
     try {
+      // Determine collection based on task type
+      const collectionName = taskType === 'detailed' ? 'detailedCreation' : 'checklistCreation';
+      
       if (editMode && selectedTask?.id) {
-        await updateDoc(doc(db, 'companies', companyCode, 'monitoringTasks', selectedTask.id), {
+        await updateDoc(doc(db, 'companies', companyCode, collectionName, selectedTask.id), {
           ...taskData,
           updatedAt: new Date().toISOString(),
         });
         setTasks(prev => prev.map(t => t.id === selectedTask.id ? { ...t, ...taskData } : t));
         alert('Task updated successfully!');
       } else {
-        const docRef = await addDoc(collection(db, 'companies', companyCode, 'monitoringTasks'), taskData);
+        const docRef = await addDoc(collection(db, 'companies', companyCode, collectionName), taskData);
         setTasks(prev => [{ ...taskData, id: docRef.id }, ...prev]);
         alert('Task created successfully!');
       }
@@ -244,9 +262,9 @@ export default function Monitoring() {
     setStep(1);
     setEditMode(false);
     setSelectedTask(null);
-    setNewTask({ name: '', responsibility: RESPONSIBILITIES[0], inUse: true });
+    setNewTask({ name: '', responsibility: '', inUse: true });
     setTaskType('detailed');
-    setDetails({ frequency: FREQUENCIES[0], oneTimeDate: '', oneTimeTime: '', startTime: '' });
+    setDetails({ frequency: FREQUENCIES[0], oneTimeDate: '', oneTimeTime: '', startTime: '', startDate: '' });
     setChecklist([{ title: '', allowNotDone: false, locationType: '', locationId: '', locationName: '' }]);
     setFields([]); // Reset fields
     setInstructionSOPs([]); // Reset instruction SOPs
@@ -280,8 +298,6 @@ export default function Monitoring() {
     if (inUseFilter === 'inactive' && task.inUse) return false;
     // Role filter
     if (roleFilter !== 'all' && task.responsibility !== roleFilter) return false;
-    // Type filter
-    if (typeFilter !== 'all' && task.type !== typeFilter) return false;
     // Search filter
     if (searchFilter && !task.name.toLowerCase().includes(searchFilter.toLowerCase())) return false;
     return true;
@@ -290,7 +306,8 @@ export default function Monitoring() {
   return (
     <Box sx={{ maxWidth: 900, mx: 'auto', mt: 4 }}>
       {/* Filter Bar */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+      <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>Monitoring tasks</Typography>
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
         <FormControl size="small" sx={{ minWidth: 120 }}>
           <InputLabel>In Use</InputLabel>
           <Select
@@ -301,31 +318,6 @@ export default function Monitoring() {
             <MenuItem value="all">All</MenuItem>
             <MenuItem value="active">Active</MenuItem>
             <MenuItem value="inactive">Inactive</MenuItem>
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 140 }}>
-          <InputLabel>Role</InputLabel>
-          <Select
-            value={roleFilter}
-            label="Role"
-            onChange={e => setRoleFilter(e.target.value)}
-          >
-            <MenuItem value="all">All</MenuItem>
-            {uniqueRoles.map(role => (
-              <MenuItem key={role} value={role}>{role}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 140 }}>
-          <InputLabel>Task Type</InputLabel>
-          <Select
-            value={typeFilter}
-            label="Task Type"
-            onChange={e => setTypeFilter(e.target.value)}
-          >
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="detailed">Detailed Task</MenuItem>
-            <MenuItem value="checklist">Checklist</MenuItem>
           </Select>
         </FormControl>
         <TextField
@@ -341,15 +333,13 @@ export default function Monitoring() {
           onClick={() => {
             setInUseFilter('all');
             setRoleFilter('all');
-            setTypeFilter('all');
             setSearchFilter('');
           }}
         >
           Clear Filters
         </Button>
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700 }}>Monitoring tasks</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
         <Button variant="contained" color="success" sx={{ fontWeight: 600, borderRadius: 2, px: 3 }} onClick={() => { setDialogOpen(true); setStep(1); }}>
           Add monitoring task
         </Button>
@@ -359,7 +349,7 @@ export default function Monitoring() {
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Monitoring tasks</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Responsible role</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Type</TableCell>
               <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>In use</TableCell>
               <TableCell align="right" sx={{ width: 48 }}></TableCell>
             </TableRow>
@@ -369,7 +359,11 @@ export default function Monitoring() {
               <TableRow key={task.id || idx} hover>
                 <TableCell sx={{ fontWeight: 500, fontSize: '1.1rem' }}>{task.name}</TableCell>
                 <TableCell>
-                  <Chip label={task.responsibility} color="default" sx={{ fontWeight: 600, fontSize: '0.95rem' }} />
+                  <Chip 
+                    label={task.type === 'detailed' ? 'Detailed' : task.type === 'checklist' ? 'Checklist' : 'Monitoring'} 
+                    color={task.type === 'detailed' ? 'primary' : task.type === 'checklist' ? 'secondary' : 'default'} 
+                    size="small" 
+                  />
                 </TableCell>
                 <TableCell>
                   <Switch
@@ -379,7 +373,9 @@ export default function Monitoring() {
                       const newInUse = e.target.checked;
                       if (!task.id || !companyCode) return;
                       try {
-                        await updateDoc(doc(db, 'companies', companyCode, 'monitoringTasks', task.id), { inUse: newInUse });
+                        // Determine collection based on task type
+                        const collectionName = task.type === 'detailed' ? 'detailedCreation' : 'checklistCreation';
+                        await updateDoc(doc(db, 'companies', companyCode, collectionName, task.id), { inUse: newInUse });
                         setTasks(prev => prev.map(t => t.id === task.id ? { ...t, inUse: newInUse } : t));
                       } catch (error) {
                         alert('Error updating status: ' + (error as any).message);
@@ -469,52 +465,9 @@ export default function Monitoring() {
                     fullWidth
                     required
                   />
-                  <FormControl fullWidth>
-                    <InputLabel>Responsible role</InputLabel>
-                    <Select
-                      value={newTask.responsibility}
-                      label="Responsible role"
-                      onChange={e => setNewTask(t => ({ ...t, responsibility: e.target.value }))}
-                    >
-                      {RESPONSIBILITIES.map(role => (
-                        <MenuItem key={role} value={role}>{role}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 120 }}>
-                    <Typography>In use</Typography>
-                    <Switch
-                      checked={newTask.inUse}
-                      onChange={e => setNewTask(t => ({ ...t, inUse: e.target.checked }))}
-                      color="success"
-                    />
-                  </Box>
                 </Stack>
                 <Divider sx={{ my: 2 }} />
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-start" sx={{ mb: 2 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Frequency</InputLabel>
-                    <Select
-                      value={details.frequency}
-                      label="Frequency"
-                      onChange={e => setDetails(d => ({ ...d, frequency: e.target.value }))}
-                    >
-                      {FREQUENCIES.map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)}
-                    </Select>
-                  </FormControl>
-                  {details.frequency !== 'One-time task' && (
-                    <TextField
-                      label="Start Time"
-                      type="time"
-                      value={startTime}
-                      onChange={e => setStartTime(e.target.value)}
-                      InputLabelProps={{ shrink: true }}
-                      fullWidth
-                      size="small"
-                      sx={{ minWidth: 180 }}
-                    />
-                  )}
-                </Stack>
+                {/* Removed Frequency, Start Date, and Start Time fields as requested */}
                 {details.frequency === 'One-time task' && (
                   <Box sx={{
                     mt: 2,
@@ -1019,7 +972,9 @@ export default function Monitoring() {
             sx={{ mb: 2 }}
             onClick={async () => {
               if (selectedTask?.id && companyCode) {
-                await deleteDoc(doc(db, 'companies', companyCode, 'monitoringTasks', selectedTask.id));
+                // Determine collection based on task type
+                const collectionName = selectedTask.type === 'detailed' ? 'detailedCreation' : 'checklistCreation';
+                await deleteDoc(doc(db, 'companies', companyCode, collectionName, selectedTask.id));
                 setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
                 setActionModalOpen(false);
               }
@@ -1042,7 +997,7 @@ export default function Monitoring() {
                 inUse: selectedTask.inUse,
               });
               setTaskType(selectedTask.type || 'detailed');
-              setDetails({ frequency: FREQUENCIES[0], oneTimeDate: '', oneTimeTime: '', startTime: '' });
+              setDetails({ frequency: FREQUENCIES[0], oneTimeDate: '', oneTimeTime: '', startTime: '', startDate: '' });
               setChecklist(selectedTask.checklist || [{ title: '', allowNotDone: false, locationType: '', locationId: '', locationName: '' }]);
               setFields(selectedTask.fields || []); // Set fields for editing
               setInstructionSOPs(selectedTask.instructionSOPs || []); // Set instruction SOPs for editing
@@ -1074,8 +1029,10 @@ export default function Monitoring() {
                 // Remove any undefined fields (especially checklist/fields)
                 if (!duplicate.fields) delete duplicate.fields;
                 if (!duplicate.checklist) delete duplicate.checklist;
+                // Determine collection based on task type
+                const collectionName = selectedTask.type === 'detailed' ? 'detailedCreation' : 'checklistCreation';
                 // Save to Firebase
-                const docRef = await addDoc(collection(db, 'companies', companyCode, 'monitoringTasks'), duplicate);
+                const docRef = await addDoc(collection(db, 'companies', companyCode, collectionName), duplicate);
                 setTasks(prev => [{ ...duplicate, id: docRef.id }, ...prev]);
                 alert('Task duplicated successfully!');
                 setActionModalOpen(false);
