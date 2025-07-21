@@ -63,7 +63,15 @@ export default function ProductionPlanning() {
   const [weekendDialogOpen, setWeekendDialogOpen] = useState(false);
   const [companyCode, setCompanyCode] = useState<string>('');
   const [weekendDays, setWeekendDays] = useState<number[]>([0, 6]); // 0=Sunday, 6=Saturday
-  const [taskCounts, setTaskCounts] = useState<{[key: string]: {detailed: number, checklist: number, extra: number}}>({});
+  // Update taskCounts state type
+  const [taskCounts, setTaskCounts] = useState<{[key: string]: {
+    daily: number,
+    weekly: number,
+    monthly: number,
+    yearly: number,
+    oneTime: number,
+    assignedToTeam: number
+  }}>({});
 
   // Get current month/year for display
   const currentMonth = currentDate.getMonth();
@@ -119,190 +127,114 @@ export default function ProductionPlanning() {
 
   const fetchTaskCounts = async () => {
     if (!companyCode) return;
-    
     try {
-      const startOfMonth = new Date(currentYear, currentMonth, 1);
-      const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
-      
-      // Fetch detailed tasks
+      // Fetch all detailed tasks (no date filter)
       const detailedQuery = query(
-        collection(db, 'companies', companyCode, 'detailedMonitoring'),
-        where('dueDate', '>=', startOfMonth.toISOString().split('T')[0]),
-        where('dueDate', '<=', endOfMonth.toISOString().split('T')[0])
+        collection(db, 'companies', companyCode, 'detailedMonitoring')
       );
       const detailedSnapshot = await getDocs(detailedQuery);
-      
-      // Fetch checklist tasks
+      // Fetch all checklist tasks (no date filter)
       const checklistQuery = query(
-        collection(db, 'companies', companyCode, 'checklistMonitoring'),
-        where('dueDate', '>=', startOfMonth.toISOString().split('T')[0]),
-        where('dueDate', '<=', endOfMonth.toISOString().split('T')[0])
+        collection(db, 'companies', companyCode, 'checklistMonitoring')
       );
       const checklistSnapshot = await getDocs(checklistQuery);
-      
-      // Fetch team member tasks
+      // Fetch all team member tasks (no date filter)
       const teamMemberQuery = query(
-        collection(db, 'companies', companyCode, 'teamMemberTasks'),
-        where('dueDate', '>=', startOfMonth.toISOString().split('T')[0]),
-        where('dueDate', '<=', endOfMonth.toISOString().split('T')[0])
+        collection(db, 'companies', companyCode, 'teamMemberTasks')
       );
       const teamMemberSnapshot = await getDocs(teamMemberQuery);
-      
       // Process the data
-      const counts: {[key: string]: {detailed: number, checklist: number, extra: number}} = {};
-      
-      // Process detailed tasks
-      const onceADayDetailedTasks: any[] = [];
-      const regularDetailedTasks: any[] = [];
-      
-      detailedSnapshot.docs.forEach(doc => {
-        const task = doc.data();
-        
-        // Separate "Once a day" tasks from regular tasks
-        if (task.frequency === 'Once a day') {
-          onceADayDetailedTasks.push(task);
-        } else {
-          regularDetailedTasks.push(task);
-        }
-      });
-      
-      // Process regular detailed tasks (with dueDate)
-      regularDetailedTasks.forEach(task => {
-        const originalDate = task.dueDate;
-        if (originalDate) {
-          // Check if the original date is a weekend
-          const originalDateObj = new Date(originalDate);
-          const isWeekend = weekendDays.includes(originalDateObj.getDay());
-          
-          // If it's a weekend, move to last working day, otherwise keep original date
-          const displayDate = isWeekend ? getLastWorkingDay(originalDate) : originalDate;
-          
-          if (!counts[displayDate]) counts[displayDate] = { detailed: 0, checklist: 0, extra: 0 };
-          counts[displayDate].detailed++;
-        }
-      });
-      
-      // Process "Once a day" detailed tasks - add to weekdays starting from their dueDate
-      if (onceADayDetailedTasks.length > 0) {
-        const days = getDaysInMonth(currentYear, currentMonth);
-        
-        days.forEach(day => {
-          if (day) {
-            const dateString = day.toISOString().split('T')[0];
-            const isWeekend = weekendDays.includes(day.getDay());
-            
-            // Count how many "Once a day" detailed tasks should be active on this date
-            let activeTasksCount = 0;
-            
-            onceADayDetailedTasks.forEach(task => {
-              const taskDueDate = task.dueDate;
-              if (taskDueDate && dateString >= taskDueDate) {
-                // Task is active from its dueDate onwards
-                activeTasksCount++;
+      const counts: {[key: string]: {
+        daily: number,
+        weekly: number,
+        monthly: number,
+        yearly: number,
+        oneTime: number,
+        assignedToTeam: number
+      }} = {};
+      // Helper to ensure date key exists
+      const ensureDate = (date: string) => {
+        if (!counts[date]) counts[date] = {
+          daily: 0, weekly: 0, monthly: 0, yearly: 0, oneTime: 0, assignedToTeam: 0
+        };
+      };
+      // Helper to move to last working day if weekend
+      const getDisplayDate = (date: string) => {
+        const d = new Date(date);
+        return weekendDays.includes(d.getDay()) ? getLastWorkingDay(date) : date;
+      };
+      // Process detailed and checklist tasks
+      const allTasks = [
+        ...detailedSnapshot.docs.map(doc => doc.data()),
+        ...checklistSnapshot.docs.map(doc => doc.data())
+      ];
+      allTasks.forEach(task => {
+        const freq = (task.frequency || '').toLowerCase();
+        const dueDate = task.dueDate;
+        if (!dueDate) return;
+        // For each frequency, increment the correct days
+        if (freq === 'once a day') {
+          // Add to every day from dueDate onwards (skip weekends)
+          const days = getDaysInMonth(currentYear, currentMonth);
+          days.forEach(day => {
+            if (day) {
+              const dateString = day.toISOString().split('T')[0];
+              if (dateString >= dueDate) {
+                ensureDate(dateString);
+                counts[dateString].daily++;
               }
-            });
-            
-            // Only add to weekdays (not weekends) and only if there are active tasks
-            if (!isWeekend && activeTasksCount > 0) {
-              if (!counts[dateString]) counts[dateString] = { detailed: 0, checklist: 0, extra: 0 };
-              counts[dateString].detailed += activeTasksCount;
             }
-          }
-        });
-        
-        // Debug logging for "Once a day" detailed tasks
-        console.log(`Found ${onceADayDetailedTasks.length} "Once a day" detailed tasks`);
-        onceADayDetailedTasks.forEach(task => {
-          console.log(`Task: ${task.title || 'Untitled'}, DueDate: ${task.dueDate}`);
-        });
-      }
-      
-      // Process checklist tasks
-      const onceADayTasks: any[] = [];
-      const regularChecklistTasks: any[] = [];
-      
-      checklistSnapshot.docs.forEach(doc => {
-        const task = doc.data();
-        
-        // Separate "Once a day" tasks from regular tasks
-        if (task.frequency === 'Once a day') {
-          onceADayTasks.push(task);
-        } else {
-          regularChecklistTasks.push(task);
+          });
+        } else if (freq === 'once a week') {
+          // Add to the same weekday as dueDate, every week
+          const due = new Date(dueDate);
+          const days = getDaysInMonth(currentYear, currentMonth);
+          days.forEach(day => {
+            if (day && day.getDay() === due.getDay() && day >= due) {
+              const dateString = day.toISOString().split('T')[0];
+              ensureDate(dateString);
+              counts[dateString].weekly++;
+            }
+          });
+        } else if (freq === 'once a month') {
+          // Add to the same day of month as dueDate (every month, regardless of dueDate, using date parts)
+          const dueParts = dueDate.split('-').map(Number); // [year, month, day]
+          const days = getDaysInMonth(currentYear, currentMonth);
+          days.forEach(day => {
+            if (day && day.getDate() === dueParts[2]) {
+              const dateString = day.toISOString().split('T')[0];
+              ensureDate(dateString);
+              counts[dateString].monthly++;
+            }
+          });
+        } else if (freq === 'once a year') {
+          // Add to the same month and day as dueDate (every year, regardless of dueDate, using date parts)
+          const dueParts = dueDate.split('-').map(Number); // [year, month, day]
+          const days = getDaysInMonth(currentYear, currentMonth);
+          days.forEach(day => {
+            if (day && day.getDate() === dueParts[2] && (currentMonth === (dueParts[1] - 1))) {
+              const dateString = day.toISOString().split('T')[0];
+              ensureDate(dateString);
+              counts[dateString].yearly++;
+            }
+          });
+        } else if (freq === 'one-time task' || freq === 'one time task' || freq === 'one-time' || freq === 'one time') {
+          // Add to the dueDate (move to last working day if weekend)
+          const displayDate = getDisplayDate(dueDate);
+          ensureDate(displayDate);
+          counts[displayDate].oneTime++;
         }
       });
-      
-      // Process regular checklist tasks (with dueDate)
-      regularChecklistTasks.forEach(task => {
-        const originalDate = task.dueDate;
-        if (originalDate) {
-          // Check if the original date is a weekend
-          const originalDateObj = new Date(originalDate);
-          const isWeekend = weekendDays.includes(originalDateObj.getDay());
-          
-          // If it's a weekend, move to last working day, otherwise keep original date
-          const displayDate = isWeekend ? getLastWorkingDay(originalDate) : originalDate;
-          
-          if (!counts[displayDate]) counts[displayDate] = { detailed: 0, checklist: 0, extra: 0 };
-          counts[displayDate].checklist++;
-        }
-      });
-      
-      // Process "Once a day" tasks - add to weekdays starting from their dueDate
-      if (onceADayTasks.length > 0) {
-        const days = getDaysInMonth(currentYear, currentMonth);
-        
-        days.forEach(day => {
-          if (day) {
-            const dateString = day.toISOString().split('T')[0];
-            const isWeekend = weekendDays.includes(day.getDay());
-            
-            // Count how many "Once a day" tasks should be active on this date
-            let activeTasksCount = 0;
-            
-            onceADayTasks.forEach(task => {
-              const taskDueDate = task.dueDate;
-              if (taskDueDate && dateString >= taskDueDate) {
-                // Task is active from its dueDate onwards
-                activeTasksCount++;
-              }
-            });
-            
-            // Only add to weekdays (not weekends) and only if there are active tasks
-            if (!isWeekend && activeTasksCount > 0) {
-              if (!counts[dateString]) counts[dateString] = { detailed: 0, checklist: 0, extra: 0 };
-              counts[dateString].checklist += activeTasksCount;
-            }
-          }
-        });
-        
-        // Debug logging for "Once a day" tasks
-        console.log(`Found ${onceADayTasks.length} "Once a day" checklist tasks`);
-        onceADayTasks.forEach(task => {
-          console.log(`Task: ${task.title || 'Untitled'}, DueDate: ${task.dueDate}`);
-        });
-      }
-      
-      // Process team member tasks (as extra)
+      // Process team member tasks (assigned to team)
       teamMemberSnapshot.docs.forEach(doc => {
         const task = doc.data();
         const originalDate = task.dueDate;
         if (originalDate) {
-          // Check if the original date is a weekend
-          const originalDateObj = new Date(originalDate);
-          const isWeekend = weekendDays.includes(originalDateObj.getDay());
-          
-          // If it's a weekend, move to last working day, otherwise keep original date
-          const displayDate = isWeekend ? getLastWorkingDay(originalDate) : originalDate;
-          
-          // Debug logging
-          console.log(`Task: ${task.title || 'Untitled'}, Original: ${originalDate}, IsWeekend: ${isWeekend}, Display: ${displayDate}`);
-          
-          if (!counts[displayDate]) counts[displayDate] = { detailed: 0, checklist: 0, extra: 0 };
-          counts[displayDate].extra++;
+          const displayDate = getDisplayDate(originalDate);
+          ensureDate(displayDate);
+          counts[displayDate].assignedToTeam++;
         }
       });
-      
       setTaskCounts(counts);
     } catch (error) {
       console.error('Error fetching task counts:', error);
@@ -537,7 +469,6 @@ export default function ProductionPlanning() {
                       const productionDay = getProductionDay(day);
                       const isWeekend = weekendDays.includes(day.getDay());
                       const dateString = day.toISOString().split('T')[0];
-                      const dayTaskCounts = taskCounts[dateString] || { detailed: 0, checklist: 0, extra: 0 };
                       
                       return (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -550,27 +481,29 @@ export default function ProductionPlanning() {
                               icon={getStatusIcon(productionDay.status)}
                             />
                           )}
-                          
-                          {/* Task Counts - Only show for non-weekend days */}
-                          {!isWeekend && (
-                            <Box sx={{ mt: 0.5 }}>
-                              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                                TASKS
-                              </Typography>
-                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-                                <Typography variant="caption" color="primary">
-                                  Detailed: {dayTaskCounts.detailed}
-                                </Typography>
-                                <Typography variant="caption" color="secondary">
-                                  Checklist: {dayTaskCounts.checklist}
-                                </Typography>
-                                <Typography variant="caption" color="warning.main">
-                                  Extra: {dayTaskCounts.extra}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          )}
-                          
+
+                          {/* Frequency Tags - compact horizontal layout */}
+                          <Box sx={{
+                            mt: 0.5,
+                            bgcolor: '#fafbfc',
+                            borderRadius: 1,
+                            p: 0.5,
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            alignItems: 'center',
+                            gap: 0.5
+                          }}>
+                            <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', mr: 0.5 }}>
+                              TASKS
+                            </Typography>
+                            <Chip label={`Daily: ${taskCounts[dateString]?.daily || 0}`} color="primary" size="small" />
+                            <Chip label={`Weekly: ${taskCounts[dateString]?.weekly || 0}`} color="secondary" size="small" />
+                            <Chip label={`Monthly: ${taskCounts[dateString]?.monthly || 0}`} color="info" size="small" />
+                            <Chip label={`Yearly: ${taskCounts[dateString]?.yearly || 0}`} color="success" size="small" />
+                            <Chip label={`One Time: ${taskCounts[dateString]?.oneTime || 0}`} color="warning" size="small" />
+                            <Chip label={`Assigned to Team: ${taskCounts[dateString]?.assignedToTeam || 0}`} color="default" size="small" />
+                          </Box>
+
                           {/* Weekend Label */}
                           {isWeekend && (!productionDay || !productionDay.notes?.includes('Weekend')) && (
                             <Typography variant="caption" color="warning.main">
