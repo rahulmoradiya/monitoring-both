@@ -305,13 +305,13 @@ export default function Tasks() {
         
         const querySnapshot = await getDocs(collection(db, 'companies', companyCode, collectionName));
         const fetchedTasks = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().name,
+            id: doc.id,
+            name: doc.data().name,
           type: doc.data().type || 'detailed',
-          description: doc.data().description || '',
-          department: doc.data().department || '',
-          details: doc.data().details || {},
-          responsibility: doc.data().responsibility || '',
+            description: doc.data().description || '',
+            department: doc.data().department || '',
+            details: doc.data().details || {},
+            responsibility: doc.data().responsibility || '',
           inUse: doc.data().inUse || true,
         }));
         
@@ -657,8 +657,8 @@ export default function Tasks() {
                 label={`Select ${currentTask.taskType === 'detailed' ? 'Detailed' : 'Checklist'} Task`}
                 onChange={e => {
                   const selectedTask = monitoringList.find(task => task.id === e.target.value);
-                  setCurrentTask(t => ({ 
-                    ...t, 
+                  setCurrentTask(t => ({
+                    ...t,
                     linkedItemId: e.target.value,
                     linkedItemTitle: selectedTask?.name || ''
                   }));

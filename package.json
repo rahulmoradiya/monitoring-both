@@ -9,6 +9,7 @@
     "@types/uuid": "^10.0.0",
     "firebase": "^11.10.0",
     "react-native-safe-area-context": "^5.5.0",
+    "react-native-vector-icons": "^10.3.0",
     "react-router-dom": "^6.0.0",
     "uuid": "^11.1.0"
   },
