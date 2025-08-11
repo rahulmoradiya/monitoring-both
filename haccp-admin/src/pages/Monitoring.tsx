@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button, Select, MenuItem, FormControl, InputLabel, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Switch, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Checkbox, FormControlLabel, Divider } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, collectionGroup, setDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, collectionGroup, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { auth } from '../firebase';
 import SOPSelectDialog, { SOP as SOPType } from '../components/SOPSelect/SOPSelectDialog';
@@ -13,11 +13,68 @@ import Stepper from '@mui/material/Stepper';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 
+// --- Mappings ---
+const MEASUREMENT_CATEGORIES = [
+  { value: 'length', label: 'Length' },
+  { value: 'weight', label: 'Mass / Weight' },
+  { value: 'temperature', label: 'Temperature' },
+  { value: 'volume', label: 'Volume' },
+  { value: 'area', label: 'Area' },
+  { value: 'speed', label: 'Speed' },
+  { value: 'time', label: 'Time' },
+  { value: 'energy', label: 'Energy' },
+  { value: 'pressure', label: 'Pressure' },
+  { value: 'force', label: 'Force' },
+  { value: 'power', label: 'Power' },
+];
+
+const MEASUREMENT_UNITS: Record<string, Record<string, { value: string; label: string }[]>> = {
+  si: {
+    length: [{ value: 'm', label: 'meter (m)' }, { value: 'cm', label: 'centimeter (cm)' }, { value: 'km', label: 'kilometer (km)' }],
+    weight: [{ value: 'kg', label: 'kilogram (kg)' }, { value: 'g', label: 'gram (g)' }],
+    temperature: [{ value: 'C', label: 'Celsius (°C)' }],
+    volume: [{ value: 'L', label: 'liter (L)' }, { value: 'ml', label: 'milliliter (ml)' }],
+    area: [{ value: 'm2', label: 'square meter (m²)' }],
+    speed: [{ value: 'm/s', label: 'm/s' }, { value: 'km/h', label: 'km/h' }],
+    time: [{ value: 's', label: 'second (s)' }, { value: 'min', label: 'minute' }, { value: 'h', label: 'hour' }],
+    energy: [{ value: 'J', label: 'joule (J)' }],
+    pressure: [{ value: 'Pa', label: 'pascal (Pa)' }, { value: 'bar', label: 'bar' }],
+    force: [{ value: 'N', label: 'newton (N)' }],
+    power: [{ value: 'W', label: 'watt (W)' }],
+  },
+  us: {
+    length: [{ value: 'in', label: 'inch' }, { value: 'ft', label: 'foot (ft)' }, { value: 'mi', label: 'mile' }],
+    weight: [{ value: 'oz', label: 'ounce (oz)' }, { value: 'lb', label: 'pound (lb)' }],
+    temperature: [{ value: 'F', label: 'Fahrenheit (°F)' }],
+    volume: [{ value: 'gal', label: 'gallon' }, { value: 'qt', label: 'quart' }, { value: 'cup', label: 'cup' }],
+    area: [{ value: 'ft2', label: 'square foot (ft²)' }],
+    speed: [{ value: 'mph', label: 'miles per hour (mph)' }],
+    time: [{ value: 's', label: 'second (s)' }, { value: 'min', label: 'minute' }, { value: 'h', label: 'hour' }],
+    energy: [{ value: 'BTU', label: 'BTU' }],
+    pressure: [{ value: 'psi', label: 'psi' }],
+    force: [{ value: 'lbf', label: 'pound-force' }],
+    power: [{ value: 'hp', label: 'horsepower (hp)' }],
+  },
+  imperial: {
+    length: [{ value: 'in', label: 'inch' }, { value: 'ft', label: 'foot (ft)' }, { value: 'mi', label: 'mile' }],
+    weight: [{ value: 'oz', label: 'ounce (oz)' }, { value: 'lb', label: 'pound (lb)' }, { value: 'st', label: 'stone' }],
+    temperature: [{ value: 'F', label: 'Fahrenheit (°F)' }],
+    volume: [{ value: 'gal', label: 'imperial gallon' }, { value: 'pt', label: 'pint' }],
+    area: [{ value: 'ft2', label: 'square foot (ft²)' }],
+    speed: [{ value: 'mph', label: 'miles per hour (mph)' }],
+    time: [{ value: 's', label: 'second (s)' }, { value: 'min', label: 'minute' }, { value: 'h', label: 'hour' }],
+    energy: [{ value: 'BTU', label: 'BTU' }],
+    pressure: [{ value: 'psi', label: 'psi' }],
+    force: [{ value: 'lbf', label: 'pound-force' }],
+    power: [{ value: 'hp', label: 'horsepower (hp)' }],
+  }
+};
+// -- End Mappings
+
 // Remove hardcoded RESPONSIBILITIES. We'll fetch roles from Firestore.
 const FREQUENCIES = ['Once a day', 'Once a week', 'Once a month', 'One-time task'];
 
 const FIELD_TYPES = [
-  { value: 'temperature', label: 'Temperature' },
   { value: 'amount', label: 'Amount' },
   { value: 'text', label: 'Text' },
   { value: 'numeric', label: 'Numeric Value' },
@@ -47,6 +104,7 @@ export default function Monitoring() {
   const [editMode, setEditMode] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [companyCode, setCompanyCode] = useState<string | null>(null);
+  const [unitSystem, setUnitSystem] = useState<'si' | 'us' | 'imperial'>('si');
 
   // --- Detail Task Fields State ---
   const [fields, setFields] = useState<any[]>([]);
@@ -151,6 +209,24 @@ export default function Monitoring() {
     fetchSOPs();
   }, [companyCode]);
 
+  // Fetch company unit system from Setup profile when companyCode changes
+  useEffect(() => {
+    const fetchUnitSystem = async () => {
+      if (!companyCode) return;
+      try {
+        const profileRef = doc(db, 'companies', companyCode, 'companyProfile', 'profile');
+        const snap = await getDoc(profileRef);
+        if (snap.exists()) {
+          const us = (snap.data() as any).unitSystem as 'si' | 'us' | 'imperial' | undefined;
+          if (us) setUnitSystem(us);
+        }
+      } catch (e) {
+        // fallback remains 'si'
+      }
+    };
+    fetchUnitSystem();
+  }, [companyCode]);
+
   useEffect(() => {
     // Fetch current user and companyCode
     const fetchCurrentUser = async () => {
@@ -228,7 +304,13 @@ export default function Monitoring() {
           : { startDate: details.startDate, startTime }),
       },
       ...(taskType === 'checklist' ? { checklist } : {}),
-      ...(taskType === 'detailed' ? { fields } : {}),
+      ...(taskType === 'detailed' ? { fields: fields.map(f => {
+        if (f.type === 'amount') {
+          // Add unitSystem at creation time to snapshot the company setting
+          f.config.unitSystemAtCreation = unitSystem;
+        }
+        return f;
+      }) } : {}),
       instructionSOPs: instructionSOPs.map(sop => ({ id: sop.id, title: sop.title, version: sop.version })),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -645,70 +727,50 @@ export default function Monitoring() {
                         <IconButton color="error" onClick={() => handleRemoveField(field.id)}><span role="img" aria-label="delete">🗑️</span></IconButton>
                       </Box>
                       {/* Render field config based on type */}
-                      {field.type === 'temperature' && (
-                        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                          <TextField
-                            size="small"
-                            label="Minimum"
-                            type="number"
-                            value={field.config.min || ''}
-                            onChange={e => handleFieldChange(field.id, 'config', { ...field.config, min: e.target.value })}
-                            InputProps={{ endAdornment: <span>°F</span> }}
-                          />
-                          <TextField
-                            size="small"
-                            label="Maximum"
-                            type="number"
-                            value={field.config.max || ''}
-                            onChange={e => handleFieldChange(field.id, 'config', { ...field.config, max: e.target.value })}
-                            InputProps={{ endAdornment: <span>°F</span> }}
-                          />
-                          <FormControl size="small" sx={{ minWidth: 80 }}>
-                            <InputLabel>Unit</InputLabel>
-                            <Select
-                              value={field.config.unit || '°F'}
-                              label="Unit"
-                              onChange={e => handleFieldChange(field.id, 'config', { ...field.config, unit: e.target.value })}
-                            >
-                              <MenuItem value="°F">°F</MenuItem>
-                              <MenuItem value="°C">°C</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </Box>
-                      )}
-                      {field.type === 'amount' && (
-                        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                          <TextField
-                            size="small"
-                            label="Minimum"
-                            type="number"
-                            value={field.config.min || ''}
-                            onChange={e => handleFieldChange(field.id, 'config', { ...field.config, min: e.target.value })}
-                          />
-                          <TextField
-                            size="small"
-                            label="Maximum"
-                            type="number"
-                            value={field.config.max || ''}
-                            onChange={e => handleFieldChange(field.id, 'config', { ...field.config, max: e.target.value })}
-                          />
-                          <FormControl size="small" sx={{ minWidth: 100 }}>
-                            <InputLabel>Unit</InputLabel>
-                            <Select
-                              value={field.config.unit || 'gram'}
-                              label="Unit"
-                              onChange={e => handleFieldChange(field.id, 'config', { ...field.config, unit: e.target.value })}
-                            >
-                              <MenuItem value="gram">Gram (g)</MenuItem>
-                              <MenuItem value="kilogram">Kilogram (kg)</MenuItem>
-                              <MenuItem value="milliliter">Milliliter (ml)</MenuItem>
-                              <MenuItem value="liter">Liter (l)</MenuItem>
-                              <MenuItem value="piece">Piece (pc)</MenuItem>
-                              <MenuItem value="other">Other</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </Box>
-                      )}
+                      {field.type === 'amount' && (() => {
+                        const category = field.config.measurementCategory || 'weight';
+                        const availableUnits = MEASUREMENT_UNITS[unitSystem]?.[category] || [];
+                        return (
+                          <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+                            <TextField
+                              size="small"
+                              label="Minimum"
+                              type="number"
+                              value={field.config.min || ''}
+                              onChange={e => handleFieldChange(field.id, 'config', { ...field.config, min: e.target.value })}
+                              sx={{ flex: '1 1 120px' }}
+                            />
+                            <TextField
+                              size="small"
+                              label="Maximum"
+                              type="number"
+                              value={field.config.max || ''}
+                              onChange={e => handleFieldChange(field.id, 'config', { ...field.config, max: e.target.value })}
+                              sx={{ flex: '1 1 120px' }}
+                            />
+                            <FormControl size="small" sx={{ flex: '1 1 150px' }}>
+                              <InputLabel>Category</InputLabel>
+                              <Select
+                                value={category}
+                                label="Category"
+                                onChange={e => handleFieldChange(field.id, 'config', { ...field.config, measurementCategory: e.target.value, unit: '' })} // Reset unit on category change
+                              >
+                                {MEASUREMENT_CATEGORIES.map(cat => <MenuItem key={cat.value} value={cat.value}>{cat.label}</MenuItem>)}
+                              </Select>
+                            </FormControl>
+                            <FormControl size="small" sx={{ flex: '1 1 150px' }}>
+                              <InputLabel>Unit</InputLabel>
+                              <Select
+                                value={field.config.unit || ''}
+                                label="Unit"
+                                onChange={e => handleFieldChange(field.id, 'config', { ...field.config, unit: e.target.value })}
+                              >
+                                {availableUnits.map(unit => <MenuItem key={unit.value} value={unit.value}>{unit.label}</MenuItem>)}
+                              </Select>
+                            </FormControl>
+                          </Box>
+                        );
+                      })()}
                       {field.type === 'text' && (
                         <Box sx={{ mb: 2 }}>
                           <FormControl size="small" fullWidth sx={{ mb: 2 }}>
@@ -735,13 +797,14 @@ export default function Monitoring() {
                       )}
                       {field.type === 'numeric' && (
                         <Box sx={{ mb: 2 }}>
-                          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                          <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
                             <TextField
                               size="small"
                               label="Minimum"
                               type="number"
                               value={field.config.min || ''}
                               onChange={e => handleFieldChange(field.id, 'config', { ...field.config, min: e.target.value })}
+                              sx={{ flex: '1 1 120px' }}
                             />
                             <TextField
                               size="small"
@@ -749,19 +812,15 @@ export default function Monitoring() {
                               type="number"
                               value={field.config.max || ''}
                               onChange={e => handleFieldChange(field.id, 'config', { ...field.config, max: e.target.value })}
+                              sx={{ flex: '1 1 120px' }}
                             />
                             <TextField
                               size="small"
-                              label="Decimal Places"
-                              type="number"
-                              inputProps={{ min: 0, max: 4 }}
-                              value={field.config.decimalPlaces || 0}
-                              onChange={e => {
-                                let val = parseInt(e.target.value, 10);
-                                if (isNaN(val) || val < 0) val = 0;
-                                if (val > 4) val = 4;
-                                handleFieldChange(field.id, 'config', { ...field.config, decimalPlaces: val });
-                              }}
+                              label="Unit"
+                              type="text"
+                              value={field.config.unit || ''}
+                              onChange={e => handleFieldChange(field.id, 'config', { ...field.config, unit: e.target.value })}
+                              sx={{ flex: '1 1 150px' }}
                             />
                           </Box>
                         </Box>
