@@ -203,7 +203,14 @@ export default function Tasks() {
   // Create/Edit logic
   const handleOpenDialog = (task?: Task) => {
     setEditMode(!!task);
-    setCurrentTask(task ? { ...task } : { assignedRoles: [], assignedUsers: [], status: 'active', priority: 'Medium', type: 'monitoring' });
+    setCurrentTask(task ? { ...task } : { 
+      assignedRoles: [], 
+      assignedUsers: [], 
+      status: 'active', 
+      priority: 'Medium', 
+      type: 'monitoring',
+      taskType: 'detailed' // Set default taskType to 'detailed' so the field shows up immediately
+    });
     setDialogOpen(true);
   };
   const handleCloseDialog = () => {
@@ -325,6 +332,34 @@ export default function Tasks() {
     fetchMonitoringTasks();
   }, [companyCode, dialogOpen, currentTask.taskType]);
 
+  // Additional useEffect to fetch detailed tasks immediately when dialog opens
+  useEffect(() => {
+    if (!companyCode || !dialogOpen) return;
+    
+    const fetchInitialDetailedTasks = async () => {
+      try {
+        // Always fetch detailed tasks initially when dialog opens
+        const querySnapshot = await getDocs(collection(db, 'companies', companyCode, 'detailedCreation'));
+        const fetchedTasks = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name,
+          type: doc.data().type || 'detailed',
+          description: doc.data().description || '',
+          department: doc.data().department || '',
+          details: doc.data().details || {},
+          responsibility: doc.data().responsibility || '',
+          inUse: doc.data().inUse || true,
+        }));
+        
+        setMonitoringList(fetchedTasks);
+      } catch (error) {
+        console.error('Error fetching initial detailed tasks:', error);
+        setMonitoringList([]);
+      }
+    };
+    
+    fetchInitialDetailedTasks();
+  }, [companyCode, dialogOpen]);
 
 
   // Open Assign to Team Member modal
