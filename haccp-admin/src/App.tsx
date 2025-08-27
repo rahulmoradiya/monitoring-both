@@ -4,7 +4,10 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
+import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsConditions from './pages/TermsConditions';
 import AdminLayout from './pages/AdminLayout';
 import Overview from './pages/Overview';
 import Setup from './pages/Setup';
@@ -72,7 +75,17 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* New Home Page Route */}
+        <Route path="/" element={!user ? <HomePage /> : <Navigate to="/admin/overview" />} />
+        
+        {/* Legal Pages - Accessible to all users */}
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-conditions" element={<TermsConditions />} />
+        
+        {/* Existing Login Route */}
         <Route path="/login" element={!user ? <LoginPage onLogin={() => setUser(auth.currentUser)} /> : <Navigate to="/admin/overview" />} />
+        
+        {/* Existing Admin Routes - All functionality preserved */}
         <Route path="/admin" element={user ? <AdminLayout companyDetails={companyDetails} /> : <Navigate to="/login" /> }>
           <Route path="overview" element={<Overview />} />
           <Route path="production-planning" element={<ProductionPlanning />} />
@@ -86,7 +99,9 @@ function App() {
           <Route path="departments" element={<Departments />} />
           <Route index element={<Navigate to="overview" />} />
         </Route>
-        <Route path="*" element={<Navigate to={user ? '/admin/overview' : '/login'} />} />
+        
+        {/* Fallback Route - Preserves existing behavior */}
+        <Route path="*" element={<Navigate to={user ? '/admin/overview' : '/'} />} />
       </Routes>
     </Router>
   );
