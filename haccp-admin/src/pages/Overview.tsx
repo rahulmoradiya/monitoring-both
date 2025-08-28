@@ -29,7 +29,8 @@ import {
   ListItemText,
   ListItemIcon,
   Avatar,
-  Tooltip
+  Tooltip,
+  TextField
 } from '@mui/material';
 import { 
   Checklist, 
@@ -42,7 +43,8 @@ import {
   Verified,
   CheckCircleOutline,
   CancelOutlined,
-  Warning
+  Warning,
+  CalendarToday
 } from '@mui/icons-material';
 
 interface UserProfile {
@@ -104,6 +106,7 @@ export default function Overview() {
   const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
   const [selectedData, setSelectedData] = useState<CollectionData | null>(null);
   const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -520,6 +523,17 @@ export default function Overview() {
     return sections;
   };
 
+  const filteredChecklistCollected = stats.checklistCollected.filter(item => 
+    item.completionDate === selectedDate || item.completedAt?.toDate?.()?.toISOString?.()?.split('T')[0] === selectedDate
+  );
+  const filteredDetailedCollected = stats.detailedCollected.filter(item => 
+    item.completionDate === selectedDate || item.completedAt?.toDate?.()?.toISOString?.()?.split('T')[0] === selectedDate
+  );
+  const filteredPersonalCollected = stats.personalCollected.filter(item => 
+    item.completionDate === selectedDate || item.completedAt?.toDate?.()?.toISOString?.()?.split('T')[0] === selectedDate
+  );
+  const filteredTotalCompleted = filteredChecklistCollected.length + filteredDetailedCollected.length + filteredPersonalCollected.length;
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="80vh">
@@ -534,6 +548,45 @@ export default function Overview() {
         Dashboard Overview
       </Typography>
 
+      {/* Date Selector */}
+      <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+        <Box display="flex" alignItems="center" sx={{ mr: 2 }}>
+          <CalendarToday sx={{ mr: 1, color: 'primary.main' }} />
+          <Typography variant="h6" sx={{ fontWeight: 500 }}>
+            Select Date:
+          </Typography>
+        </Box>
+        <TextField
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: 'primary.main',
+              },
+              '&:hover fieldset': {
+                borderColor: 'primary.dark',
+              },
+            },
+          }}
+          InputProps={{
+            sx: {
+              fontWeight: 500,
+              fontSize: '1rem',
+            }
+          }}
+        />
+        <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+          Viewing tasks completed on {new Date(selectedDate).toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })}
+        </Typography>
+      </Box>
+
       {/* Summary Cards */}
       <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
         <Card sx={{ flex: '1 1 200px', minWidth: 200, bgcolor: 'primary.light', color: 'white' }}>
@@ -541,7 +594,7 @@ export default function Overview() {
             <Box display="flex" alignItems="center" justifyContent="space-between">
               <Box>
                 <Typography variant="h4" component="div">
-                  {stats.totalCompleted}
+                  {filteredTotalCompleted}
                 </Typography>
                 <Typography variant="body2">
                   Total Completed
@@ -557,13 +610,13 @@ export default function Overview() {
             <Box display="flex" alignItems="center" justifyContent="space-between">
               <Box>
                 <Typography variant="h4" component="div">
-                  {stats.todayCompleted}
+                  {filteredChecklistCollected.length}
                 </Typography>
                 <Typography variant="body2">
-                  Today
+                  Checklist Tasks
                 </Typography>
               </Box>
-              <Schedule sx={{ fontSize: 40, opacity: 0.8 }} />
+              <Checklist sx={{ fontSize: 40, opacity: 0.8 }} />
             </Box>
           </CardContent>
         </Card>
@@ -573,13 +626,13 @@ export default function Overview() {
             <Box display="flex" alignItems="center" justifyContent="space-between">
               <Box>
                 <Typography variant="h4" component="div">
-                  {stats.thisWeekCompleted}
+                  {filteredDetailedCollected.length}
                 </Typography>
                 <Typography variant="body2">
-                  This Week
+                  Detailed Tasks
                 </Typography>
               </Box>
-              <TrendingUp sx={{ fontSize: 40, opacity: 0.8 }} />
+              <Assignment sx={{ fontSize: 40, opacity: 0.8 }} />
             </Box>
           </CardContent>
         </Card>
@@ -589,13 +642,13 @@ export default function Overview() {
             <Box display="flex" alignItems="center" justifyContent="space-between">
               <Box>
                 <Typography variant="h4" component="div">
-                  {stats.thisMonthCompleted}
+                  {filteredPersonalCollected.length}
                 </Typography>
                 <Typography variant="body2">
-                  This Month
+                  Personal Tasks
                 </Typography>
               </Box>
-              <TrendingUp sx={{ fontSize: 40, opacity: 0.8 }} />
+              <Person sx={{ fontSize: 40, opacity: 0.8 }} />
             </Box>
           </CardContent>
         </Card>
@@ -610,7 +663,7 @@ export default function Overview() {
           </Box>
           <Divider sx={{ mb: 2 }} />
           <Typography variant="h4" color="primary" sx={{ mb: 1 }}>
-            {stats.checklistCollected.length}
+            {filteredChecklistCollected.length}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Completed checklist tasks
@@ -624,7 +677,7 @@ export default function Overview() {
           </Box>
           <Divider sx={{ mb: 2 }} />
           <Typography variant="h4" color="success.main" sx={{ mb: 1 }}>
-            {stats.detailedCollected.length}
+            {filteredDetailedCollected.length}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Completed detailed tasks
@@ -638,7 +691,7 @@ export default function Overview() {
           </Box>
           <Divider sx={{ mb: 2 }} />
           <Typography variant="h4" color="info.main" sx={{ mb: 1 }}>
-            {stats.personalCollected.length}
+            {filteredPersonalCollected.length}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Completed personal tasks
@@ -657,11 +710,11 @@ export default function Overview() {
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Box display="flex" alignItems="center">
               <Checklist sx={{ mr: 1, color: 'primary.main' }} />
-              <Typography variant="h6">Checklist Tasks Data ({stats.checklistCollected.length})</Typography>
+              <Typography variant="h6">Checklist Tasks Data ({filteredChecklistCollected.length})</Typography>
             </Box>
           </AccordionSummary>
           <AccordionDetails>
-            {stats.checklistCollected.length > 0 ? (
+            {filteredChecklistCollected.length > 0 ? (
               <TableContainer component={Paper}>
                 <Table>
                   <TableHead>
@@ -675,7 +728,7 @@ export default function Overview() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {stats.checklistCollected.map((item) => (
+                    {filteredChecklistCollected.map((item) => (
                       <TableRow key={item.id} hover>
                         <TableCell>{item.taskTitle || 'Untitled Task'}</TableCell>
                         <TableCell>{formatDate(item.completionDate)}</TableCell>
@@ -723,11 +776,11 @@ export default function Overview() {
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Box display="flex" alignItems="center">
               <Assignment sx={{ mr: 1, color: 'success.main' }} />
-              <Typography variant="h6">Detailed Tasks Data ({stats.detailedCollected.length})</Typography>
+              <Typography variant="h6">Detailed Tasks Data ({filteredDetailedCollected.length})</Typography>
             </Box>
           </AccordionSummary>
           <AccordionDetails>
-            {stats.detailedCollected.length > 0 ? (
+            {filteredDetailedCollected.length > 0 ? (
               <TableContainer component={Paper}>
                 <Table>
                   <TableHead>
@@ -740,7 +793,7 @@ export default function Overview() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {stats.detailedCollected.map((item) => (
+                    {filteredDetailedCollected.map((item) => (
                       <TableRow key={item.id} hover>
                         <TableCell>{item.taskTitle || 'Untitled Task'}</TableCell>
                         <TableCell>{formatDate(item.completionDate)}</TableCell>
@@ -781,11 +834,11 @@ export default function Overview() {
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Box display="flex" alignItems="center">
               <Person sx={{ mr: 1, color: 'info.main' }} />
-              <Typography variant="h6">Personal Tasks Data ({stats.personalCollected.length})</Typography>
+              <Typography variant="h6">Personal Tasks Data ({filteredPersonalCollected.length})</Typography>
             </Box>
           </AccordionSummary>
           <AccordionDetails>
-            {stats.personalCollected.length > 0 ? (
+            {filteredPersonalCollected.length > 0 ? (
               <TableContainer component={Paper}>
                 <Table>
                   <TableHead>
@@ -798,7 +851,7 @@ export default function Overview() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {stats.personalCollected.map((item) => (
+                    {filteredPersonalCollected.map((item) => (
                       <TableRow key={item.id} hover>
                         <TableCell>{item.taskTitle || 'Untitled Task'}</TableCell>
                         <TableCell>{formatDate(item.completionDate)}</TableCell>
