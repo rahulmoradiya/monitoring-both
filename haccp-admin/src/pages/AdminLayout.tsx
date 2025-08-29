@@ -2,10 +2,18 @@ import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { Drawer, List, ListItem, ListItemButton, ListItemText, Toolbar, Box, Button, AppBar, IconButton, Typography, Tooltip, Avatar } from '@mui/material';
+import { Drawer, List, ListItem, ListItemButton, ListItemText, ListItemIcon, Toolbar, Box, Button, AppBar, IconButton, Typography, Tooltip, Avatar } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import SettingsIcon from '@mui/icons-material/Settings';
+import GroupIcon from '@mui/icons-material/Group';
+import MonitorIcon from '@mui/icons-material/Monitor';
+import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
+import DescriptionIcon from '@mui/icons-material/Description';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 
@@ -77,42 +85,67 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
         <Box sx={{ overflow: 'auto' }}>
           <List>
             <ListItem disablePadding>
-                          <ListItemButton component={NavLink} to="/admin/overview">
-              <ListItemText primary="Verification" />
-            </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={NavLink} to="/admin/production-planning">
-                <ListItemText primary="Monitoring Planning" />
+              <ListItemButton component={NavLink} to="/admin/overview">
+                <ListItemIcon>
+                  <DashboardIcon sx={{ color: 'primary.main' }} />
+                </ListItemIcon>
+                <ListItemText primary="Overview" />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
+              <ListItemButton component={NavLink} to="/admin/verification">
+                <ListItemIcon>
+                  <VerifiedIcon sx={{ color: 'primary.main' }} />
+                </ListItemIcon>
+                <ListItemText primary="Verification" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
               <ListItemButton component={NavLink} to="/admin/setup">
+                <ListItemIcon>
+                  <SettingsIcon sx={{ color: 'primary.main' }} />
+                </ListItemIcon>
                 <ListItemText primary="Setup" />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
               <ListItemButton component={NavLink} to="/admin/teams">
+                <ListItemIcon>
+                  <GroupIcon sx={{ color: 'primary.main' }} />
+                </ListItemIcon>
                 <ListItemText primary="Teams" />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
               <ListItemButton component={NavLink} to="/admin/monitoring-plan">
+                <ListItemIcon>
+                  <MonitorIcon sx={{ color: 'primary.main' }} />
+                </ListItemIcon>
                 <ListItemText primary="Monitoring" />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
               <ListItemButton component={NavLink} to="/admin/layout">
+                <ListItemIcon>
+                  <DashboardCustomizeIcon sx={{ color: 'primary.main' }} />
+                </ListItemIcon>
                 <ListItemText primary="Layout" />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
               <ListItemButton component={NavLink} to="/admin/sop">
+                <ListItemIcon>
+                  <DescriptionIcon sx={{ color: 'primary.main' }} />
+                </ListItemIcon>
                 <ListItemText primary="SOPs" />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
               <ListItemButton component={NavLink} to="/admin/tasks">
+                <ListItemIcon>
+                  <AssignmentIcon sx={{ color: 'primary.main' }} />
+                </ListItemIcon>
                 <ListItemText primary="Tasks" />
               </ListItemButton>
             </ListItem>

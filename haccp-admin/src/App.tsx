@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsConditions from './pages/TermsConditions';
 import AdminLayout from './pages/AdminLayout';
+import Overview from './pages/Overview';
 import Verification from './pages/Verification';
 import Setup from './pages/Setup';
 import Teams from './pages/Teams';
@@ -18,7 +19,7 @@ import Layout from './pages/Layout';
 import SOP from './pages/SOP';
 import Tasks from './pages/Tasks';
 import Departments from './pages/Departments';
-import ProductionPlanning from './pages/ProductionPlanning';
+
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -87,8 +88,9 @@ function App() {
         
         {/* Existing Admin Routes - All functionality preserved */}
         <Route path="/admin" element={user ? <AdminLayout companyDetails={companyDetails} /> : <Navigate to="/login" /> }>
-          <Route path="overview" element={<Verification />} />
-          <Route path="production-planning" element={<ProductionPlanning />} />
+          <Route path="overview" element={<Overview />} />
+          <Route path="verification" element={<Verification />} />
+
           <Route path="setup" element={<Setup />} />
           <Route path="teams" element={<Teams />} />
           <Route path="profile" element={<Profile />} />
