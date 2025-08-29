@@ -101,7 +101,7 @@ interface OverviewStats {
   thisMonthCompleted: number;
 }
 
-export default function Overview() {
+export default function Verification() {
   const [stats, setStats] = useState<OverviewStats>({
     checklistCollected: [],
     detailedCollected: [],
@@ -661,7 +661,7 @@ export default function Overview() {
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
-        Dashboard Overview
+        Verification Dashboard
       </Typography>
 
       {/* Date Selector */}

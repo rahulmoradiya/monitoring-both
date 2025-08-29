@@ -77,9 +77,9 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
         <Box sx={{ overflow: 'auto' }}>
           <List>
             <ListItem disablePadding>
-              <ListItemButton component={NavLink} to="/admin/overview">
-                <ListItemText primary="Overview" />
-              </ListItemButton>
+                          <ListItemButton component={NavLink} to="/admin/overview">
+              <ListItemText primary="Verification" />
+            </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
               <ListItemButton component={NavLink} to="/admin/production-planning">
