@@ -134,23 +134,23 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
               </ListItemButton>
             </ListItem>
 
-            {/* 6. Manage Tasks */}
+            {/* 6. Manage Monitoring */}
+            <ListItem disablePadding>
+              <ListItemButton component={NavLink} to="/admin/manage">
+                <ListItemIcon>
+                  <MonitorIcon sx={{ color: 'primary.main' }} />
+                </ListItemIcon>
+                <ListItemText primary="Manage Monitoring" />
+              </ListItemButton>
+            </ListItem>
+
+            {/* 7. Manage Tasks */}
             <ListItem disablePadding>
               <ListItemButton component={NavLink} to="/admin/manage-tasks">
                 <ListItemIcon>
                   <AssignmentIcon sx={{ color: 'primary.main' }} />
                 </ListItemIcon>
                 <ListItemText primary="Manage Tasks" />
-              </ListItemButton>
-            </ListItem>
-
-            {/* 7. Manage */}
-            <ListItem disablePadding>
-              <ListItemButton component={NavLink} to="/admin/manage">
-                <ListItemIcon>
-                  <MonitorIcon sx={{ color: 'primary.main' }} />
-                </ListItemIcon>
-                <ListItemText primary="Manage" />
               </ListItemButton>
             </ListItem>
 
