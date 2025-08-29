@@ -201,6 +201,18 @@ export default function Verification() {
           sampleDetailed: detailedCollected[0] || 'No detailed tasks',
           sampleDetailedKeys: detailedCollected[0] ? Object.keys(detailedCollected[0]) : []
         });
+        
+        // Debug logging for date fields in detailed tasks
+        if (detailedCollected.length > 0) {
+          console.log('Detailed task date fields:', detailedCollected.map(item => ({
+            taskTitle: item.taskTitle,
+            completionDate: item.completionDate,
+            completedAt: item.completedAt,
+            createdAt: item.createdAt,
+            timestamp: item.timestamp,
+            allKeys: Object.keys(item)
+          })));
+        }
 
         setStats({
           checklistCollected,
@@ -854,15 +866,44 @@ export default function Verification() {
     return sections;
   };
 
-  const filteredChecklistCollected = stats.checklistCollected.filter(item => 
-    item.completionDate === selectedDate || item.completedAt?.toDate?.()?.toISOString?.()?.split('T')[0] === selectedDate
-  );
-  const filteredDetailedCollected = stats.detailedCollected.filter(item => 
-    item.completionDate === selectedDate || item.completedAt?.toDate?.()?.toISOString?.()?.split('T')[0] === selectedDate
-  );
-  const filteredPersonalCollected = stats.personalCollected.filter(item => 
-    item.completionDate === selectedDate || item.completedAt?.toDate?.()?.toISOString?.()?.split('T')[0] === selectedDate
-  );
+  // Enhanced date filtering with debugging and fallback date fields
+  const filteredChecklistCollected = stats.checklistCollected.filter(item => {
+    const itemDate = item.completionDate || 
+                    item.completedAt?.toDate?.()?.toISOString?.()?.split('T')[0] ||
+                    item.createdAt?.toDate?.()?.toISOString?.()?.split('T')[0];
+    return itemDate === selectedDate;
+  });
+  
+  const filteredDetailedCollected = stats.detailedCollected.filter(item => {
+    const itemDate = item.completionDate || 
+                    item.completedAt?.toDate?.()?.toISOString?.()?.split('T')[0] ||
+                    item.createdAt?.toDate?.()?.toISOString?.()?.split('T')[0] ||
+                    item.timestamp?.toDate?.()?.toISOString?.()?.split('T')[0];
+    
+    // Debug logging for detailed tasks
+    if (item.taskTitle === 'Temp 1' || item.taskTitle === 'dfdsf') {
+      console.log('Detailed task date filtering:', {
+        taskTitle: item.taskTitle,
+        completionDate: item.completionDate,
+        completedAt: item.completedAt,
+        createdAt: item.createdAt,
+        timestamp: item.timestamp,
+        selectedDate: selectedDate,
+        itemDate: itemDate,
+        matches: itemDate === selectedDate
+      });
+    }
+    
+    return itemDate === selectedDate;
+  });
+  
+  const filteredPersonalCollected = stats.personalCollected.filter(item => {
+    const itemDate = item.completionDate || 
+                    item.completedAt?.toDate?.()?.toISOString?.()?.split('T')[0] ||
+                    item.createdAt?.toDate?.()?.toISOString?.()?.split('T')[0] ||
+                    item.timestamp?.toDate?.()?.toISOString?.()?.split('T')[0];
+    return itemDate === selectedDate;
+  });
       const filteredTotalCompleted = filteredChecklistCollected.length + filteredDetailedCollected.length + filteredPersonalCollected.length;
     
     // Count verified and pending verification tasks for the selected date
