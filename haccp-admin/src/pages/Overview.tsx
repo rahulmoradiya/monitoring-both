@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { 
   Card, 
@@ -78,6 +78,16 @@ interface CollectionData {
     value: any;
     type: string;
   }>;
+  verifiedBy?: {
+    uid: string;
+    name: string;
+    email?: string | null;
+    role?: string;
+    departmentName?: string;
+    verifiedAt: string;
+  };
+  verificationStatus?: 'pending' | 'verified';
+  verifiedAt?: string;
   [key: string]: any;
 }
 
@@ -247,6 +257,71 @@ export default function Overview() {
   const handleCloseVerifyDialog = () => {
     setVerifyDialogOpen(false);
     setSelectedData(null);
+  };
+
+  const handleVerifyTask = async (data: CollectionData) => {
+    if (!companyCode || !data.id) return;
+    
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.error('No authenticated user found');
+        return;
+      }
+
+      // Get current user's profile information
+      const userProfile = userProfiles[currentUser.uid];
+      const verifiedAt = new Date().toISOString();
+      const verifiedBy = {
+        uid: currentUser.uid,
+        name: userProfile?.name || currentUser.email || 'Unknown User',
+        email: currentUser.email,
+        role: userProfile?.role || 'No role',
+        departmentName: userProfile?.departmentName || 'No department',
+        verifiedAt: verifiedAt
+      };
+
+      // Determine which collection to update based on task type
+      let collectionPath = '';
+      if (data.taskType === 'checklist') {
+        collectionPath = `companies/${companyCode}/checklistCollected`;
+      } else if (data.taskType === 'detailed') {
+        collectionPath = `companies/${companyCode}/detailedCollected`;
+      } else {
+        collectionPath = `companies/${companyCode}/personalCollected`;
+      }
+
+      // Update the document with verification information
+      const docRef = doc(db, collectionPath, data.id);
+      await updateDoc(docRef, {
+        verifiedBy: verifiedBy,
+        verificationStatus: 'verified',
+        verifiedAt: verifiedAt
+      });
+
+      // Update local state to reflect the change
+      setStats(prevStats => ({
+        ...prevStats,
+        checklistCollected: prevStats.checklistCollected.map(item => 
+          item.id === data.id ? { ...item, verifiedBy: verifiedBy, verificationStatus: 'verified', verifiedAt: verifiedAt } : item
+        ),
+        detailedCollected: prevStats.detailedCollected.map(item => 
+          item.id === data.id ? { ...item, verifiedBy: verifiedBy, verificationStatus: 'verified', verifiedAt: verifiedAt } : item
+        ),
+        personalCollected: prevStats.personalCollected.map(item => 
+          item.id === data.id ? { ...item, verifiedBy: verifiedBy, verificationStatus: 'verified', verifiedAt: verifiedAt } : item
+        )
+      }));
+
+      console.log('Task verified successfully:', data.id);
+      
+      // Close the dialog
+      handleCloseVerifyDialog();
+      
+    } catch (error) {
+      console.error('Error verifying task:', error);
+      // You could add a toast notification here for user feedback
+    }
   };
 
   const renderUserInfo = (userId: string) => {
@@ -532,7 +607,14 @@ export default function Overview() {
   const filteredPersonalCollected = stats.personalCollected.filter(item => 
     item.completionDate === selectedDate || item.completedAt?.toDate?.()?.toISOString?.()?.split('T')[0] === selectedDate
   );
-  const filteredTotalCompleted = filteredChecklistCollected.length + filteredDetailedCollected.length + filteredPersonalCollected.length;
+      const filteredTotalCompleted = filteredChecklistCollected.length + filteredDetailedCollected.length + filteredPersonalCollected.length;
+    
+    // Count verified and pending verification tasks for the selected date
+    const filteredVerifiedCount = filteredChecklistCollected.filter(item => item.verificationStatus === 'verified').length +
+                                  filteredDetailedCollected.filter(item => item.verificationStatus === 'verified').length +
+                                  filteredPersonalCollected.filter(item => item.verificationStatus === 'verified').length;
+    
+    const filteredPendingCount = filteredTotalCompleted - filteredVerifiedCount;
 
   if (loading) {
     return (
@@ -654,50 +736,42 @@ export default function Overview() {
         </Card>
       </Box>
 
-      {/* Collection Details */}
+      {/* Verification Status Cards */}
       <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
-        <Paper sx={{ flex: '1 1 300px', minWidth: 300, p: 2, height: 'fit-content' }}>
-          <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
-            <Checklist sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6">Checklist Tasks</Typography>
-          </Box>
-          <Divider sx={{ mb: 2 }} />
-          <Typography variant="h4" color="primary" sx={{ mb: 1 }}>
-            {filteredChecklistCollected.length}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Completed checklist tasks
-          </Typography>
-        </Paper>
+        <Card sx={{ flex: '1 1 200px', minWidth: 200, bgcolor: 'warning.light', color: 'white' }}>
+          <CardContent>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="h4" component="div">
+                  {filteredPendingCount}
+                </Typography>
+                <Typography variant="body2">
+                  Verification Pending
+                </Typography>
+              </Box>
+              <Schedule sx={{ fontSize: 40, opacity: 0.8 }} />
+            </Box>
+          </CardContent>
+        </Card>
 
-        <Paper sx={{ flex: '1 1 300px', minWidth: 300, p: 2, height: 'fit-content' }}>
-          <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
-            <Assignment sx={{ mr: 1, color: 'success.main' }} />
-            <Typography variant="h6">Detailed Tasks</Typography>
-          </Box>
-          <Divider sx={{ mb: 2 }} />
-          <Typography variant="h4" color="success.main" sx={{ mb: 1 }}>
-            {filteredDetailedCollected.length}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Completed detailed tasks
-          </Typography>
-        </Paper>
-
-        <Paper sx={{ flex: '1 1 300px', minWidth: 300, p: 2, height: 'fit-content' }}>
-          <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
-            <Person sx={{ mr: 1, color: 'info.main' }} />
-            <Typography variant="h6">Personal Tasks</Typography>
-          </Box>
-          <Divider sx={{ mb: 2 }} />
-          <Typography variant="h4" color="info.main" sx={{ mb: 1 }}>
-            {filteredPersonalCollected.length}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Completed personal tasks
-          </Typography>
-        </Paper>
+        <Card sx={{ flex: '1 1 200px', minWidth: 200, bgcolor: 'success.light', color: 'white' }}>
+          <CardContent>
+            <Box display="flex" alignItems="center" justifyContent="flex-start">
+              <Box>
+                <Typography variant="h4" component="div">
+                  {filteredVerifiedCount}
+                </Typography>
+                <Typography variant="body2">
+                  Verified
+                </Typography>
+              </Box>
+              <Verified sx={{ fontSize: 40, opacity: 0.8, ml: 'auto' }} />
+            </Box>
+          </CardContent>
+        </Card>
       </Box>
+
+
 
       {/* Detailed Data Tables */}
       <Box sx={{ mt: 4 }}>
@@ -751,13 +825,15 @@ export default function Overview() {
                         </TableCell>
                         <TableCell>
                           <Button
-                            variant="outlined"
+                            variant={item.verificationStatus === 'verified' ? 'contained' : 'outlined'}
+                            color={item.verificationStatus === 'verified' ? 'success' : 'primary'}
                             size="small"
-                            startIcon={<Verified />}
+                            startIcon={item.verificationStatus === 'verified' ? <CheckCircle /> : <Verified />}
                             onClick={() => handleVerifyClick(item)}
+                            disabled={item.verificationStatus === 'verified'}
                             sx={{ minWidth: 80 }}
                           >
-                            Verify
+                            {item.verificationStatus === 'verified' ? 'Verified' : 'Verify'}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -809,13 +885,15 @@ export default function Overview() {
                         </TableCell>
                         <TableCell>
                           <Button
-                            variant="outlined"
+                            variant={item.verificationStatus === 'verified' ? 'contained' : 'outlined'}
+                            color={item.verificationStatus === 'verified' ? 'success' : 'primary'}
                             size="small"
-                            startIcon={<Verified />}
+                            startIcon={item.verificationStatus === 'verified' ? <CheckCircle /> : <Verified />}
                             onClick={() => handleVerifyClick(item)}
+                            disabled={item.verificationStatus === 'verified'}
                             sx={{ minWidth: 80 }}
                           >
-                            Verify
+                            {item.verificationStatus === 'verified' ? 'Verified' : 'Verify'}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -867,13 +945,15 @@ export default function Overview() {
                         </TableCell>
                         <TableCell>
                           <Button
-                            variant="outlined"
+                            variant={item.verificationStatus === 'verified' ? 'contained' : 'outlined'}
+                            color={item.verificationStatus === 'verified' ? 'success' : 'primary'}
                             size="small"
-                            startIcon={<Verified />}
+                            startIcon={item.verificationStatus === 'verified' ? <CheckCircle /> : <Verified />}
                             onClick={() => handleVerifyClick(item)}
+                            disabled={item.verificationStatus === 'verified'}
                             sx={{ minWidth: 80 }}
                           >
-                            Verify
+                            {item.verificationStatus === 'verified' ? 'Verified' : 'Verify'}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -908,6 +988,15 @@ export default function Overview() {
         <DialogActions>
           <Button onClick={handleCloseVerifyDialog} color="primary">
             Close
+          </Button>
+          <Button 
+            variant="contained" 
+            color="success" 
+            startIcon={<Verified />}
+            onClick={() => handleVerifyTask(selectedData!)}
+            disabled={!selectedData}
+          >
+            Verify
           </Button>
         </DialogActions>
       </Dialog>
