@@ -154,9 +154,21 @@ export default function Verification() {
           getDocs(collection(db, 'companies', companyCode, 'personalCollected'))
         ]);
 
-        const checklistCollected = checklistSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CollectionData));
-        const detailedCollected = detailedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CollectionData));
-        const personalCollected = personalSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CollectionData));
+        const checklistCollected = checklistSnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          taskType: 'checklist',
+          ...doc.data() 
+        } as CollectionData));
+        const detailedCollected = detailedSnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          taskType: 'detailed',
+          ...doc.data() 
+        } as CollectionData));
+        const personalCollected = personalSnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          taskType: 'personal',
+          ...doc.data() 
+        } as CollectionData));
 
         // Calculate statistics
         const totalCompleted = checklistCollected.length + detailedCollected.length + personalCollected.length;
@@ -180,6 +192,15 @@ export default function Verification() {
             const itemDate = item.completionDate || item.completedAt?.toDate?.()?.toISOString?.()?.split('T')[0];
             return itemDate && itemDate >= thisMonth;
           }).length;
+
+        // Debug logging for fetched data
+        console.log('Fetched data:', {
+          checklistCollected: checklistCollected.length,
+          detailedCollected: detailedCollected.length,
+          personalCollected: personalCollected.length,
+          sampleDetailed: detailedCollected[0] || 'No detailed tasks',
+          sampleDetailedKeys: detailedCollected[0] ? Object.keys(detailedCollected[0]) : []
+        });
 
         setStats({
           checklistCollected,
@@ -250,6 +271,9 @@ export default function Verification() {
   };
 
   const handleVerifyClick = (data: CollectionData) => {
+    console.log('Verify button clicked for:', data);
+    console.log('Task type:', data.taskType);
+    console.log('Task data:', data);
     setSelectedData(data);
     setVerifyDialogOpen(true);
   };
@@ -283,16 +307,58 @@ export default function Verification() {
 
       // Determine which collection to update based on task type
       let collectionPath = '';
+      let collectionName = '';
+      
+      // Debug logging
+      console.log('Verifying task:', {
+        id: data.id,
+        taskType: data.taskType,
+        taskTitle: data.taskTitle,
+        companyCode: companyCode
+      });
+
       if (data.taskType === 'checklist') {
         collectionPath = `companies/${companyCode}/checklistCollected`;
+        collectionName = 'checklistCollected';
       } else if (data.taskType === 'detailed') {
         collectionPath = `companies/${companyCode}/detailedCollected`;
+        collectionName = 'detailedCollected';
       } else {
+        // Default to personalCollected if no taskType or unknown type
         collectionPath = `companies/${companyCode}/personalCollected`;
+        collectionName = 'personalCollected';
       }
 
+      console.log('Collection path:', collectionPath);
+      console.log('Document ID:', data.id);
+
+      // First, check if the document exists before trying to update it
+      let docRef = doc(db, collectionPath, data.id);
+      let docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        console.error(`Document ${data.id} does not exist in collection ${collectionName}`);
+        console.error('Available collections:', ['checklistCollected', 'detailedCollected', 'personalCollected']);
+        
+        // Try to find the document in other collections
+        for (const collection of ['checklistCollected', 'detailedCollected', 'personalCollected']) {
+          const testPath = `companies/${companyCode}/${collection}`;
+          const testDocRef = doc(db, testPath, data.id);
+          const testDocSnap = await getDoc(testDocRef);
+          if (testDocSnap.exists()) {
+            console.log(`Document found in ${collection} collection`);
+            collectionPath = testPath;
+            // Update the docRef to point to the correct collection
+            docRef = doc(db, collectionPath, data.id);
+            break;
+          }
+        }
+      }
+
+      // Log the final document reference being used
+      console.log('Final document reference:', docRef.path);
+      
       // Update the document with verification information
-      const docRef = doc(db, collectionPath, data.id);
       await updateDoc(docRef, {
         verifiedBy: verifiedBy,
         verificationStatus: 'verified',
@@ -368,6 +434,16 @@ export default function Verification() {
   };
 
   const renderCollectedData = (data: CollectionData) => {
+    // Debug logging to see what data we're working with
+    console.log('renderCollectedData called with:', data);
+    console.log('Data keys:', Object.keys(data));
+    console.log('Task type:', data.taskType);
+    console.log('Fields:', data.fields);
+    console.log('Raw data entries:', Object.entries(data).filter(([key, value]) => 
+      !['id', 'taskTitle', 'taskType', 'completionDate', 'completedBy', 'verificationStatus', 'verifiedBy', 'verifiedAt'].includes(key) &&
+      value !== null && value !== undefined && value !== ''
+    ));
+    
     const sections = [];
 
     // Basic Information
@@ -476,12 +552,68 @@ export default function Verification() {
       </Box>
     );
 
-    // Checklist Items (if available)
-    if (data.checklistItems && data.checklistItems.length > 0) {
+    // Additional Task Information for Detailed Tasks
+    if (data.taskType === 'detailed') {
+      const additionalFields = [];
+      
+      // Add any additional fields that detailed tasks might have
+      if (data.temperature) additionalFields.push({ label: 'Temperature', value: data.temperature, type: 'measurement' });
+      if (data.humidity) additionalFields.push({ label: 'Humidity', value: data.humidity, type: 'measurement' });
+      if (data.ph) additionalFields.push({ label: 'pH Level', value: data.ph, type: 'measurement' });
+      if (data.weight) additionalFields.push({ label: 'Weight', value: data.weight, type: 'measurement' });
+      if (data.quantity) additionalFields.push({ label: 'Quantity', value: data.quantity, type: 'count' });
+      if (data.notes) additionalFields.push({ label: 'Notes', value: data.notes, type: 'text' });
+      if (data.observations) additionalFields.push({ label: 'Observations', value: data.observations, type: 'text' });
+      if (data.measurements) additionalFields.push({ label: 'Measurements', value: data.measurements, type: 'data' });
+      
+      if (additionalFields.length > 0) {
+        sections.push(
+          <Box key="additionalInfo" sx={{ mb: 3 }}>
+            <Typography variant="h6" sx={{ mb: 2, color: 'primary.main', fontWeight: 600 }}>
+              Task Measurements & Observations
+            </Typography>
+            <Paper sx={{ bgcolor: 'grey.50', borderRadius: 2, overflow: 'hidden' }}>
+              {additionalFields.map((field, index) => (
+                <Box 
+                  key={index} 
+                  sx={{ 
+                    p: 2, 
+                    borderBottom: index < additionalFields.length - 1 ? '1px solid' : 'none',
+                    borderColor: 'divider',
+                    bgcolor: 'white',
+                    '&:hover': { bgcolor: 'grey.50' }
+                  }}
+                >
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 500, mb: 0.5 }}>
+                        {field.label}
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        {typeof field.value === 'object' ? JSON.stringify(field.value, null, 2) : String(field.value)}
+                      </Typography>
+                    </Box>
+                    <Chip 
+                      label={field.type} 
+                      color="info" 
+                      size="small"
+                      sx={{ fontWeight: 500 }}
+                    />
+                  </Box>
+                </Box>
+              ))}
+            </Paper>
+          </Box>
+        );
+      }
+    }
+
+    // Checklist Items (if available) - Show for checklist tasks
+    if (data.taskType === 'checklist' && data.checklistItems && data.checklistItems.length > 0) {
       sections.push(
         <Box key="checklist" sx={{ mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2, color: 'primary.main', fontWeight: 600 }}>
-            Checklist Items
+            📋 Checklist Items
           </Typography>
           <Paper sx={{ bgcolor: 'grey.50', borderRadius: 2, overflow: 'hidden' }}>
             {data.checklistItems.map((item, index) => (
@@ -527,75 +659,144 @@ export default function Verification() {
       );
     }
 
-    // Detailed Fields (if available)
-    if (data.fields && data.fields.length > 0) {
-      sections.push(
-        <Box key="fields" sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2, color: 'primary.main', fontWeight: 600 }}>
-            Collected Data
-          </Typography>
-          <Paper sx={{ bgcolor: 'grey.50', borderRadius: 2, overflow: 'hidden' }}>
-            {data.fields.map((field, index) => (
-              <Box 
-                key={index} 
-                sx={{ 
-                  p: 2, 
-                  borderBottom: index < data.fields!.length - 1 ? '1px solid' : 'none',
-                  borderColor: 'divider',
-                  bgcolor: 'white',
-                  '&:hover': { bgcolor: 'grey.50' }
-                }}
-              >
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 500, mb: 0.5 }}>
-                      {field.label}
+    // Detailed Fields are now handled by the smart data display above
+
+    // Smart Data Display for Detailed Tasks - Show only essential data
+    if (data.taskType === 'detailed') {
+      const essentialFields = [];
+      
+      // Extract temperature and other measurement data from fieldValues
+      if (data.fieldValues) {
+        Object.entries(data.fieldValues).forEach(([key, value]) => {
+          if (typeof value === 'object' && value !== null) {
+            const fieldData = value as any; // Type assertion for dynamic field access
+            
+            // Handle nested temperature data like amount_0.temperature
+            if (fieldData.temperature !== undefined) {
+              essentialFields.push({
+                label: 'Temperature',
+                value: `${fieldData.temperature}°${fieldData.temperatureUnit || 'C'}`,
+                icon: '🌡️',
+                type: 'measurement'
+              });
+            }
+            // Handle other measurement fields
+            if (fieldData.humidity !== undefined) {
+              essentialFields.push({
+                label: 'Humidity',
+                value: `${fieldData.humidity}%`,
+                icon: '💧',
+                type: 'measurement'
+              });
+            }
+            if (fieldData.ph !== undefined) {
+              essentialFields.push({
+                label: 'pH Level',
+                value: fieldData.ph,
+                icon: '🧪',
+                type: 'measurement'
+              });
+            }
+            if (fieldData.weight !== undefined) {
+              essentialFields.push({
+                label: 'Weight',
+                value: `${fieldData.weight} ${fieldData.weightUnit || 'kg'}`,
+                icon: '⚖️',
+                type: 'measurement'
+              });
+            }
+            if (fieldData.quantity !== undefined) {
+              essentialFields.push({
+                label: 'Quantity',
+                value: fieldData.quantity,
+                icon: '🔢',
+                type: 'count'
+              });
+            }
+          }
+        });
+      }
+      
+      // Add other essential fields
+      if (data.notes) {
+        essentialFields.push({
+          label: 'Notes',
+          value: data.notes,
+          icon: '📝',
+          type: 'text'
+        });
+      }
+      
+      if (data.observations) {
+        essentialFields.push({
+          label: 'Observations',
+          value: data.observations,
+          icon: '👁️',
+          type: 'text'
+        });
+      }
+      
+      if (data.measurements) {
+        essentialFields.push({
+          label: 'Additional Measurements',
+          value: data.measurements,
+          icon: '📊',
+          type: 'data'
+        });
+      }
+      
+      // If we have essential fields, display them nicely
+      if (essentialFields.length > 0) {
+        sections.push(
+          <Box key="essentialData" sx={{ mb: 3 }}>
+            <Typography variant="h6" sx={{ mb: 2, color: 'primary.main', fontWeight: 600 }}>
+              📊 Collected Measurements & Data
+            </Typography>
+            <Paper sx={{ bgcolor: 'grey.50', borderRadius: 2, overflow: 'hidden' }}>
+              {essentialFields.map((field, index) => (
+                <Box 
+                  key={index} 
+                  sx={{ 
+                    p: 2, 
+                    borderBottom: index < essentialFields.length - 1 ? '1px solid' : 'none',
+                    borderColor: 'divider',
+                    bgcolor: 'white',
+                    '&:hover': { bgcolor: 'grey.50' }
+                  }}
+                >
+                  <Box display="flex" alignItems="center" sx={{ mb: 1 }}>
+                    <Typography variant="h4" sx={{ mr: 2 }}>
+                      {field.icon}
                     </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                      {field.value}
-                    </Typography>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 500, mb: 0.5 }}>
+                        {field.label}
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        {typeof field.value === 'object' ? JSON.stringify(field.value, null, 2) : String(field.value)}
+                      </Typography>
+                    </Box>
+                    <Chip 
+                      label={field.type} 
+                      color="info" 
+                      size="small"
+                      sx={{ fontWeight: 500 }}
+                    />
                   </Box>
-                  <Chip 
-                    label={field.type} 
-                    color="info" 
-                    size="small"
-                    sx={{ fontWeight: 500 }}
-                  />
                 </Box>
-              </Box>
-            ))}
-          </Paper>
-        </Box>
-      );
+              ))}
+            </Paper>
+          </Box>
+        );
+      }
     }
 
-    // Deviations (if any)
-    if (data.deviations && data.deviations.length > 0) {
-      sections.push(
-        <Box key="deviations" sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2, color: 'error.main', fontWeight: 600 }}>
-            ⚠️ Deviations
-          </Typography>
-          <Paper sx={{ bgcolor: 'error.light', borderRadius: 2, p: 2 }}>
-            {data.deviations.map((deviation, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Warning color="error" sx={{ mr: 1 }} />
-                <Typography variant="body1" color="error.dark" sx={{ fontWeight: 500 }}>
-                  {deviation}
-                </Typography>
-              </Box>
-            ))}
-          </Paper>
-        </Box>
-      );
-    }
-
-    // Summary Statistics
-    if (data.totalItems !== undefined) {
+    // Summary Statistics for Checklist Tasks
+    if (data.taskType === 'checklist' && data.totalItems !== undefined) {
       sections.push(
         <Box key="summary" sx={{ mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2, color: 'primary.main', fontWeight: 600 }}>
-            Summary
+            📊 Checklist Summary
           </Typography>
           <Paper sx={{ bgcolor: 'grey.50', borderRadius: 2, p: 2 }}>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -624,6 +825,27 @@ export default function Verification() {
                 </Typography>
               </Box>
             </Box>
+          </Paper>
+        </Box>
+      );
+    }
+
+    // Deviations for Checklist Tasks (if any)
+    if (data.taskType === 'checklist' && data.deviations && data.deviations.length > 0) {
+      sections.push(
+        <Box key="deviations" sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2, color: 'error.main', fontWeight: 600 }}>
+            ⚠️ Deviations
+          </Typography>
+          <Paper sx={{ bgcolor: 'error.light', borderRadius: 2, p: 2 }}>
+            {data.deviations.map((deviation, index) => (
+              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <Warning color="error" sx={{ mr: 1 }} />
+                <Typography variant="body1" color="error.dark" sx={{ fontWeight: 500 }}>
+                  {deviation}
+                </Typography>
+              </Box>
+            ))}
           </Paper>
         </Box>
       );
@@ -921,7 +1143,10 @@ export default function Verification() {
                             color={item.verificationStatus === 'verified' ? 'success' : 'primary'}
                             size="small"
                             startIcon={item.verificationStatus === 'verified' ? <CheckCircle /> : <Verified />}
-                            onClick={() => handleVerifyClick(item)}
+                            onClick={() => {
+                              console.log('Detailed task button clicked:', item);
+                              handleVerifyClick(item);
+                            }}
                             sx={{ minWidth: 80 }}
                           >
                             {item.verificationStatus === 'verified' ? 'View Data' : 'Verify'}
