@@ -437,6 +437,40 @@ export default function Overview() {
                 }
               />
             </ListItem>
+            
+            {/* Verified By section - only show if task is verified */}
+            {data.verificationStatus === 'verified' && data.verifiedBy && (
+              <ListItem sx={{ px: 0, py: 1 }}>
+                <ListItemText 
+                  primary={
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                      Verified By
+                    </Typography>
+                  }
+                  secondary={
+                    <Box sx={{ mt: 1 }}>
+                      <Box display="flex" alignItems="center" sx={{ mb: 1 }}>
+                        <Avatar sx={{ width: 32, height: 32, mr: 1, bgcolor: 'success.main' }}>
+                          <CheckCircle />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {data.verifiedBy.name || 'Unknown User'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {data.verifiedBy.role || 'No role'}
+                            {data.verifiedBy.departmentName && ` • ${data.verifiedBy.departmentName}`}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Verified on: {formatDate(data.verifiedAt || data.verifiedBy.verifiedAt)}
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </ListItem>
+            )}
           </List>
         </Paper>
       </Box>
@@ -830,10 +864,9 @@ export default function Overview() {
                             size="small"
                             startIcon={item.verificationStatus === 'verified' ? <CheckCircle /> : <Verified />}
                             onClick={() => handleVerifyClick(item)}
-                            disabled={item.verificationStatus === 'verified'}
                             sx={{ minWidth: 80 }}
                           >
-                            {item.verificationStatus === 'verified' ? 'Verified' : 'Verify'}
+                            {item.verificationStatus === 'verified' ? 'View Data' : 'Verify'}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -877,8 +910,7 @@ export default function Overview() {
                           <Chip 
                             label={item.taskType || 'Detailed'}
                             color="primary"
-                            size="small"
-                          />
+                            size="small" />
                         </TableCell>
                         <TableCell>
                           {renderUserInfo(item.completedBy || '')}
@@ -890,10 +922,9 @@ export default function Overview() {
                             size="small"
                             startIcon={item.verificationStatus === 'verified' ? <CheckCircle /> : <Verified />}
                             onClick={() => handleVerifyClick(item)}
-                            disabled={item.verificationStatus === 'verified'}
                             sx={{ minWidth: 80 }}
                           >
-                            {item.verificationStatus === 'verified' ? 'Verified' : 'Verify'}
+                            {item.verificationStatus === 'verified' ? 'View Data' : 'Verify'}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -950,10 +981,9 @@ export default function Overview() {
                             size="small"
                             startIcon={item.verificationStatus === 'verified' ? <CheckCircle /> : <Verified />}
                             onClick={() => handleVerifyClick(item)}
-                            disabled={item.verificationStatus === 'verified'}
                             sx={{ minWidth: 80 }}
                           >
-                            {item.verificationStatus === 'verified' ? 'Verified' : 'Verify'}
+                            {item.verificationStatus === 'verified' ? 'View Data' : 'Verify'}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -978,8 +1008,12 @@ export default function Overview() {
       >
         <DialogTitle>
           <Box display="flex" alignItems="center">
-            <Verified sx={{ mr: 1, color: 'primary.main' }} />
-            Verify Collected Data
+            {selectedData?.verificationStatus === 'verified' ? (
+              <CheckCircle sx={{ mr: 1, color: 'success.main' }} />
+            ) : (
+              <Verified sx={{ mr: 1, color: 'primary.main' }} />
+            )}
+            {selectedData?.verificationStatus === 'verified' ? 'View Verified Data' : 'Verify Collected Data'}
           </Box>
         </DialogTitle>
         <DialogContent>
@@ -989,15 +1023,17 @@ export default function Overview() {
           <Button onClick={handleCloseVerifyDialog} color="primary">
             Close
           </Button>
-          <Button 
-            variant="contained" 
-            color="success" 
-            startIcon={<Verified />}
-            onClick={() => handleVerifyTask(selectedData!)}
-            disabled={!selectedData}
-          >
-            Verify
-          </Button>
+          {selectedData?.verificationStatus !== 'verified' && (
+            <Button 
+              variant="contained" 
+              color="success" 
+              startIcon={<Verified />}
+              onClick={() => handleVerifyTask(selectedData!)}
+              disabled={!selectedData}
+            >
+              Verify
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>
