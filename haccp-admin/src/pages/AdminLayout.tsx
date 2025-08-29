@@ -16,6 +16,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import ChatIcon from '@mui/icons-material/Chat';
 
 const drawerWidth = 220;
 
@@ -124,13 +125,13 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
               </ListItemButton>
             </ListItem>
 
-            {/* 5. Files */}
+            {/* 5. Files or SOPs */}
             <ListItem disablePadding>
               <ListItemButton component={NavLink} to="/admin/files">
                 <ListItemIcon>
                   <DescriptionIcon sx={{ color: 'primary.main' }} />
                 </ListItemIcon>
-                <ListItemText primary="Files" />
+                <ListItemText primary="Files or SOPs" />
               </ListItemButton>
             </ListItem>
 
@@ -161,6 +162,16 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                   <VerifiedIcon sx={{ color: 'primary.main' }} />
                 </ListItemIcon>
                 <ListItemText primary="Audit" />
+              </ListItemButton>
+            </ListItem>
+
+            {/* 9. Chat */}
+            <ListItem disablePadding>
+              <ListItemButton component={NavLink} to="/admin/chat">
+                <ListItemIcon>
+                  <ChatIcon sx={{ color: 'primary.main' }} />
+                </ListItemIcon>
+                <ListItemText primary="Chat" />
               </ListItemButton>
             </ListItem>
           </List>

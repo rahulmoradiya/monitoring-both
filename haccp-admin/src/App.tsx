@@ -19,6 +19,8 @@ import Layout from './pages/Layout';
 import SOP from './pages/SOP';
 import Tasks from './pages/Tasks';
 import Departments from './pages/Departments';
+import Chat from './pages/Chat';
+import ChatDetail from './pages/ChatDetail';
 
 
 function App() {
@@ -93,9 +95,11 @@ function App() {
           <Route path="settings" element={<Setup />} />
           <Route path="teams-management" element={<Teams />} />
           <Route path="files" element={<SOP />} />
-          <Route path="manage-tasks" element={<Tasks />} />
           <Route path="manage" element={<Monitoring />} />
+          <Route path="manage-tasks" element={<Tasks />} />
           <Route path="audit" element={<Verification />} />
+          <Route path="chat" element={<Chat />} />
+          <Route path="chat/:chatId" element={<ChatDetail />} />
           <Route path="profile" element={<Profile />} />
           <Route path="departments" element={<Departments />} />
           <Route index element={<Navigate to="dashboard" />} />
