@@ -77,33 +77,32 @@ function App() {
     <Router>
       <Routes>
         {/* New Home Page Route */}
-        <Route path="/" element={!user ? <HomePage /> : <Navigate to="/admin/overview" />} />
+        <Route path="/" element={!user ? <HomePage /> : <Navigate to="/admin/dashboard" />} />
         
         {/* Legal Pages - Accessible to all users */}
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-conditions" element={<TermsConditions />} />
         
         {/* Existing Login Route */}
-        <Route path="/login" element={!user ? <LoginPage onLogin={() => setUser(auth.currentUser)} /> : <Navigate to="/admin/overview" />} />
+        <Route path="/login" element={!user ? <LoginPage onLogin={() => setUser(auth.currentUser)} /> : <Navigate to="/admin/dashboard" />} />
         
         {/* Existing Admin Routes - All functionality preserved */}
         <Route path="/admin" element={user ? <AdminLayout companyDetails={companyDetails} /> : <Navigate to="/login" /> }>
-          <Route path="overview" element={<Overview />} />
-          <Route path="verification" element={<Verification />} />
-
-          <Route path="setup" element={<Setup />} />
-          <Route path="teams" element={<Teams />} />
+          <Route path="dashboard" element={<Overview />} />
+          <Route path="location" element={<Layout />} />
+          <Route path="settings" element={<Setup />} />
+          <Route path="teams-management" element={<Teams />} />
+          <Route path="files" element={<SOP />} />
+          <Route path="manage-tasks" element={<Tasks />} />
+          <Route path="manage" element={<Monitoring />} />
+          <Route path="audit" element={<Verification />} />
           <Route path="profile" element={<Profile />} />
-          <Route path="monitoring-plan" element={<Monitoring />} />
-          <Route path="layout" element={<Layout />} />
-          <Route path="sop" element={<SOP />} />
-          <Route path="tasks" element={<Tasks />} />
           <Route path="departments" element={<Departments />} />
-          <Route index element={<Navigate to="overview" />} />
+          <Route index element={<Navigate to="dashboard" />} />
         </Route>
         
         {/* Fallback Route - Preserves existing behavior */}
-        <Route path="*" element={<Navigate to={user ? '/admin/overview' : '/'} />} />
+        <Route path="*" element={<Navigate to={user ? '/admin/dashboard' : '/'} />} />
       </Routes>
     </Router>
   );
