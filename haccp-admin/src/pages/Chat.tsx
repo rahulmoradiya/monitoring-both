@@ -75,20 +75,43 @@ export default function Chat() {
 
   useEffect(() => {
     const fetchCompanyCode = async () => {
-      if (!currentUser) return;
+      if (!currentUser) {
+        setLoading(false);
+        return;
+      }
       
-      const usersSnap = await getDocs(collection(db, 'companies'));
-      for (const companyDoc of usersSnap.docs) {
-        const usersCol = await getDocs(collection(db, 'companies', companyDoc.id, 'users'));
-        const userDoc = usersCol.docs.find(doc => doc.data().uid === currentUser.uid);
-        if (userDoc) {
-          setCompanyCode(companyDoc.id);
-          break;
+      try {
+        const usersSnap = await getDocs(collection(db, 'companies'));
+        for (const companyDoc of usersSnap.docs) {
+          const usersCol = await getDocs(collection(db, 'companies', companyDoc.id, 'users'));
+          const userDoc = usersCol.docs.find(doc => doc.data().uid === currentUser.uid);
+          if (userDoc) {
+            setCompanyCode(companyDoc.id);
+            break;
+          }
         }
+        // If no company found, still set loading to false
+        if (!companyCode) {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error fetching company code:', error);
+        setLoading(false);
       }
     };
     fetchCompanyCode();
   }, [currentUser]);
+
+  // Add timeout to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+      }
+    }, 10000); // 10 second timeout
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
 
   useEffect(() => {
     if (companyCode) {
@@ -339,6 +362,60 @@ export default function Chat() {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Check if there's no data
+  const hasNoData = chatItems.length === 0 && allUsers.length === 0;
+
+  if (hasNoData) {
+    return (
+      <Box sx={{ p: 3 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <ChatIcon sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 600, color: 'primary.main' }}>
+              Chat
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* No Data Message */}
+        <Paper sx={{ p: 6, textAlign: 'center', bgcolor: 'grey.50' }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h3" sx={{ color: 'text.secondary', mb: 2 }}>
+              💬
+            </Typography>
+            <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 600, mb: 2 }}>
+              Welcome to Chat!
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              This is your first time here. The chat system will be available once you have team members and start conversations. You'll be able to create group chats and have direct conversations with your team.
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
+              To get started with chat:
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                • Add team members in the "Teams Management" section
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                • Create group chats for different departments or projects
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                • Start direct conversations with individual team members
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                • Share updates, ask questions, and collaborate in real-time
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
       </Box>
     );
   }

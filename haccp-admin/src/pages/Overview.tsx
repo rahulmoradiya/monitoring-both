@@ -48,15 +48,26 @@ export default function Overview() {
     const fetchCompanyCode = async () => {
       const user = auth.currentUser;
       if (user) {
-        const usersSnap = await getDocs(collection(db, 'companies'));
-        for (const companyDoc of usersSnap.docs) {
-          const usersCol = await getDocs(collection(db, 'companies', companyDoc.id, 'users'));
-          const userDoc = usersCol.docs.find(doc => doc.data().uid === user.uid);
-          if (userDoc) {
-            setCompanyCode(companyDoc.id);
-            break;
+        try {
+          const usersSnap = await getDocs(collection(db, 'companies'));
+          for (const companyDoc of usersSnap.docs) {
+            const usersCol = await getDocs(collection(db, 'companies', companyDoc.id, 'users'));
+            const userDoc = usersCol.docs.find(doc => doc.data().uid === user.uid);
+            if (userDoc) {
+              setCompanyCode(companyDoc.id);
+              break;
+            }
           }
+          // If no company found, still set loading to false
+          if (!companyCode) {
+            setLoading(false);
+          }
+        } catch (error) {
+          console.error('Error fetching company code:', error);
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
     };
     fetchCompanyCode();
@@ -67,6 +78,17 @@ export default function Overview() {
       fetchMonitoringSummary();
     }
   }, [companyCode]);
+
+  // Add timeout to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+      }
+    }, 10000); // 10 second timeout
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
 
   const fetchMonitoringSummary = async () => {
     if (!companyCode) return;
@@ -217,6 +239,56 @@ export default function Overview() {
     return (
       <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Check if there's no data
+  const hasNoData = monitoringSummary.totalTasks === 0 && 
+                    monitoringSummary.totalCompletedToday === 0;
+
+  if (hasNoData) {
+    return (
+      <Box sx={{ p: 3 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+          <Dashboard sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 600, color: 'primary.main' }}>
+            Overview
+          </Typography>
+        </Box>
+
+        {/* No Data Message */}
+        <Paper sx={{ p: 6, textAlign: 'center', bgcolor: 'grey.50' }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h3" sx={{ color: 'text.secondary', mb: 2 }}>
+              📊
+            </Typography>
+            <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 600, mb: 2 }}>
+              Welcome to Your Dashboard!
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              This is your first time here. Your dashboard will show monitoring tasks, progress tracking, and key metrics once you start creating and assigning tasks.
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
+              To get started:
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                • Create monitoring tasks in the "Manage Monitoring" section
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                • Assign tasks to team members in "Teams Management"
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                • Set up your company profile in "Settings"
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
       </Box>
     );
   }

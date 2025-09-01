@@ -132,13 +132,31 @@ export default function Verification() {
               break;
             }
           }
+          // If no company found, still set loading to false
+          if (!companyCode) {
+            setLoading(false);
+          }
         } catch (error) {
           console.error('Error fetching company code:', error);
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
     };
     fetchCurrentUser();
   }, []);
+
+  // Add timeout to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+      }
+    }, 10000); // 10 second timeout
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
 
   useEffect(() => {
     if (!companyCode) return;
@@ -917,6 +935,98 @@ export default function Verification() {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="80vh">
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Check if there's no data for the selected date
+  const hasNoDataForDate = filteredTotalCompleted === 0;
+
+  if (hasNoDataForDate) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
+          Verification Dashboard
+        </Typography>
+
+        {/* Date Selector */}
+        <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <Box display="flex" alignItems="center" sx={{ mr: 2 }}>
+            <CalendarToday sx={{ mr: 1, color: 'primary.main' }} />
+            <Typography variant="h6" sx={{ fontWeight: 500 }}>
+              Select Date:
+            </Typography>
+          </Box>
+          <TextField
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: 'primary.main',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'primary.dark',
+                },
+              },
+            }}
+            InputProps={{
+              sx: {
+                fontWeight: 500,
+                fontSize: '1rem',
+              }
+            }}
+          />
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+            Viewing tasks completed on {new Date(selectedDate).toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}
+          </Typography>
+        </Box>
+
+        {/* No Data Message */}
+        <Paper sx={{ p: 6, textAlign: 'center', bgcolor: 'grey.50' }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h3" sx={{ color: 'text.secondary', mb: 2 }}>
+              🔍
+            </Typography>
+            <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 600, mb: 2 }}>
+              No Tasks Completed Yet
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              There are no completed tasks for {new Date(selectedDate).toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}. The verification dashboard will show completed tasks once team members start completing their monitoring assignments.
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
+              What you'll see here:
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                • Completed checklist and detailed monitoring tasks
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                • Personal task completions
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                • Verification status and data review
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                • Task completion statistics and trends
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
       </Box>
     );
   }
