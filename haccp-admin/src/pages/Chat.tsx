@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -22,7 +22,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Divider,
   CircularProgress,
   Skeleton,
   AppBar,
@@ -36,7 +35,6 @@ import {
   Person as PersonIcon,
   Add as AddIcon,
   Search as SearchIcon,
-  Circle as CircleIcon,
   Send as SendIcon,
   MoreVert as MoreVertIcon,
   ArrowBack as ArrowBackIcon
@@ -149,58 +147,7 @@ export default function Chat() {
     fetchCompanyCode();
   }, [currentUser]);
 
-  // Add timeout to prevent infinite loading
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading) {
-        setLoading(false);
-      }
-    }, 10000); // 10 second timeout
-
-    return () => clearTimeout(timeout);
-  }, [loading]);
-
-  useEffect(() => {
-    if (companyCode) {
-      fetchUsers();
-    }
-  }, [companyCode]);
-
-  useEffect(() => {
-    if (companyCode && currentUser) {
-      setupChatListeners();
-    }
-  }, [companyCode, currentUser]);
-
-  // Update chat items when allUsers changes (to refresh names)
-  useEffect(() => {
-    if (allUsers.length > 0 && chatItems.length > 0) {
-      // Refresh chat items to update names with newly loaded user data
-      const updatedChatItems = chatItems.map(chatItem => {
-        if (chatItem.type === 'direct' && chatItem.otherUserId) {
-          const otherUser = allUsers.find(u => u.uid === chatItem.otherUserId);
-          if (otherUser && (otherUser.name || otherUser.email)) {
-            const newName = otherUser.name || otherUser.email || chatItem.name;
-            if (newName !== chatItem.name) {
-              return { ...chatItem, name: newName, photoURL: otherUser.photoURL };
-            }
-          }
-        }
-        return chatItem;
-      });
-      
-      // Only update if there are actual changes
-      const hasChanges = updatedChatItems.some((item, index) => 
-        item.name !== chatItems[index].name || item.photoURL !== chatItems[index].photoURL
-      );
-      
-      if (hasChanges) {
-        setChatItems(updatedChatItems);
-      }
-    }
-  }, [allUsers]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     if (!companyCode) return;
     
     try {
@@ -216,7 +163,7 @@ export default function Chat() {
     } catch (error) {
       console.error('Error fetching users:', error);
     }
-  };
+  }, [companyCode]);
 
   const trackOnlineStatus = (users: User[]) => {
     // For now, we'll simulate online status based on recent activity
@@ -238,7 +185,24 @@ export default function Chat() {
     setOnlineUsers(online);
   };
 
-  const setupChatListeners = () => {
+  // Add timeout to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+      }
+    }, 10000); // 10 second timeout
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
+  useEffect(() => {
+    if (companyCode) {
+      fetchUsers();
+    }
+  }, [companyCode, fetchUsers]);
+
+  const setupChatListeners = useCallback(() => {
     if (!companyCode || !currentUser) return;
 
     let conversations: ChatItem[] = [];
@@ -356,7 +320,41 @@ export default function Chat() {
       conversationsUnsubscribe();
       groupsUnsubscribe();
     };
-  };
+  }, [companyCode, currentUser, allUsers]);
+
+  useEffect(() => {
+    if (companyCode && currentUser) {
+      setupChatListeners();
+    }
+  }, [companyCode, currentUser, setupChatListeners]);
+
+  // Update chat items when allUsers changes (to refresh names)
+  useEffect(() => {
+    if (allUsers.length > 0 && chatItems.length > 0) {
+      // Refresh chat items to update names with newly loaded user data
+      const updatedChatItems = chatItems.map(chatItem => {
+        if (chatItem.type === 'direct' && chatItem.otherUserId) {
+          const otherUser = allUsers.find(u => u.uid === chatItem.otherUserId);
+          if (otherUser && (otherUser.name || otherUser.email)) {
+            const newName = otherUser.name || otherUser.email || chatItem.name;
+            if (newName !== chatItem.name) {
+              return { ...chatItem, name: newName, photoURL: otherUser.photoURL };
+            }
+          }
+        }
+        return chatItem;
+      });
+      
+      // Only update if there are actual changes
+      const hasChanges = updatedChatItems.some((item, index) => 
+        item.name !== chatItems[index].name || item.photoURL !== chatItems[index].photoURL
+      );
+      
+      if (hasChanges) {
+        setChatItems(updatedChatItems);
+      }
+    }
+  }, [allUsers, chatItems]);
 
   const handleChatClick = (chatItem: ChatItem) => {
     setSelectedChat(chatItem);
@@ -375,61 +373,7 @@ export default function Chat() {
     }
   };
 
-  const startNewDirectChat = async (otherUserId: string) => {
-    if (!companyCode || !currentUser) return;
 
-    try {
-      const otherUser = allUsers.find(u => u.uid === otherUserId);
-      if (!otherUser) return;
-
-      const pairKey = [currentUser.uid, otherUserId].sort().join('_');
-      const conversationsRef = collection(db, 'companies', companyCode, 'conversations');
-
-      // Check if conversation already exists
-      const existingQ = query(
-        conversationsRef,
-        where('participantsKey', '==', pairKey)
-      );
-      let existingSnap = await getDocs(existingQ);
-
-      let chatId: string;
-      if (existingSnap.empty) {
-        // Create new conversation
-        const conversationData = {
-          participants: [currentUser.uid, otherUserId],
-          participantsKey: pairKey,
-          participantNames: {
-            [currentUser.uid]: currentUser.displayName || currentUser.email,
-            [otherUserId]: otherUser.name,
-          },
-          lastMessage: '',
-          lastMessageTime: serverTimestamp(),
-          lastMessageSender: '',
-          unreadCount: {
-            [currentUser.uid]: 0,
-            [otherUserId]: 0,
-          },
-          createdAt: serverTimestamp(),
-        };
-        const newDocRef = await addDoc(conversationsRef, conversationData);
-        chatId = newDocRef.id;
-      } else {
-        chatId = existingSnap.docs[0].id;
-      }
-
-      // Navigate to chat
-      navigate(`/admin/chat/${chatId}`, {
-        state: {
-          type: 'direct',
-          chatName: otherUser.name,
-          otherUserId: otherUserId,
-          companyCode
-        }
-      });
-    } catch (error) {
-      console.error('Error creating conversation:', error);
-    }
-  };
 
   const createNewGroup = async () => {
     if (!companyCode || !currentUser) return;
