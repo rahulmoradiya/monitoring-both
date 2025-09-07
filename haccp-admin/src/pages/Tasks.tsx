@@ -311,16 +311,23 @@ export default function Tasks() {
         }
         
         const querySnapshot = await getDocs(collection(db, 'companies', companyCode, collectionName));
-        const fetchedTasks = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            name: doc.data().name,
+        const allTasks = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name,
           type: doc.data().type || 'detailed',
-            description: doc.data().description || '',
-            department: doc.data().department || '',
-            details: doc.data().details || {},
-            responsibility: doc.data().responsibility || '',
-          inUse: doc.data().inUse || true,
+          description: doc.data().description || '',
+          department: doc.data().department || '',
+          details: doc.data().details || {},
+          responsibility: doc.data().responsibility || '',
+          inUse: doc.data().inUse !== undefined ? doc.data().inUse : true, // Handle undefined properly
         }));
+        
+        console.log('All tasks before filtering:', allTasks);
+        console.log('Tasks with inUse values:', allTasks.map(t => ({ name: t.name, inUse: t.inUse })));
+        
+        const fetchedTasks = allTasks.filter(task => task.inUse === true); // Only include active tasks
+        
+        console.log('Filtered tasks (active only):', fetchedTasks);
         
         setMonitoringList(fetchedTasks);
       } catch (error) {
@@ -340,7 +347,7 @@ export default function Tasks() {
       try {
         // Always fetch detailed tasks initially when dialog opens
         const querySnapshot = await getDocs(collection(db, 'companies', companyCode, 'detailedCreation'));
-        const fetchedTasks = querySnapshot.docs.map(doc => ({
+        const allTasks = querySnapshot.docs.map(doc => ({
           id: doc.id,
           name: doc.data().name,
           type: doc.data().type || 'detailed',
@@ -348,8 +355,15 @@ export default function Tasks() {
           department: doc.data().department || '',
           details: doc.data().details || {},
           responsibility: doc.data().responsibility || '',
-          inUse: doc.data().inUse || true,
+          inUse: doc.data().inUse !== undefined ? doc.data().inUse : true, // Handle undefined properly
         }));
+        
+        console.log('Initial detailed tasks before filtering:', allTasks);
+        console.log('Initial tasks with inUse values:', allTasks.map(t => ({ name: t.name, inUse: t.inUse })));
+        
+        const fetchedTasks = allTasks.filter(task => task.inUse === true); // Only include active tasks
+        
+        console.log('Initial filtered tasks (active only):', fetchedTasks);
         
         setMonitoringList(fetchedTasks);
       } catch (error) {
