@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
-import { Drawer, List, ListItem, ListItemButton, ListItemText, ListItemIcon, Toolbar, Box, AppBar, IconButton, Typography, Tooltip, Avatar, Card, CardContent, Fade, Stack } from '@mui/material';
+import { Drawer, List, ListItem, ListItemButton, ListItemText, ListItemIcon, Toolbar, Box, AppBar, IconButton, Typography, Tooltip, Avatar, Card, CardContent, Fade, Stack, Divider, Button, Popper, ClickAwayListener, Paper } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
@@ -22,11 +22,89 @@ const drawerWidth = 220;
 
 export default function AdminLayout({ companyDetails }: { companyDetails?: any }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const user = auth.currentUser;
   const displayName = user?.displayName || user?.email || 'User';
   const email = user?.email || '';
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [userPhotoURL, setUserPhotoURL] = useState(user?.photoURL || '');
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchAnchorEl, setSearchAnchorEl] = useState<null | HTMLElement>(null);
+  const [closeTimeout, setCloseTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Search suggestions data
+  const quickActions = [
+    { label: 'Add Team Member', action: () => navigate('/admin/teams-management'), keywords: ['team', 'member', 'add', 'user', 'person'] },
+    { label: 'Add Monitoring Task', action: () => navigate('/admin/manage'), keywords: ['monitoring', 'task', 'add', 'create', 'monitor'] },
+    { label: 'Add Personal Task', action: () => navigate('/admin/manage-tasks'), keywords: ['personal', 'task', 'add', 'create', 'individual'] },
+    { label: 'Create SOP', action: () => navigate('/admin/files'), keywords: ['sop', 'create', 'file', 'document', 'procedure'] },
+    { label: 'Add Department', action: () => navigate('/admin/teams-management'), keywords: ['department', 'add', 'create', 'dept'] },
+    { label: 'Add Location Item', action: () => navigate('/admin/location'), keywords: ['location', 'area', 'room', 'equipment', 'add'] },
+  ];
+
+  const navigationItems = [
+    { label: 'Dashboard', path: '/admin/dashboard', keywords: ['dashboard', 'home', 'overview', 'main'] },
+    { label: 'Teams', path: '/admin/teams-management', keywords: ['teams', 'team', 'members', 'people', 'users'] },
+    { label: 'Monitoring', path: '/admin/manage', keywords: ['monitoring', 'monitor', 'tasks', 'manage'] },
+    { label: 'Tasks', path: '/admin/manage-tasks', keywords: ['tasks', 'task', 'manage', 'assign'] },
+    { label: 'Audit', path: '/admin/audit', keywords: ['audit', 'verification', 'check', 'review'] },
+    { label: 'Chat', path: '/admin/chat', keywords: ['chat', 'message', 'communication', 'talk'] },
+    { label: 'Settings', path: '/admin/settings', keywords: ['settings', 'setup', 'config', 'preferences'] },
+  ];
+
+  // Filter suggestions based on search query
+  const filteredQuickActions = searchQuery 
+    ? quickActions.filter(item => 
+        item.keywords.some(keyword => 
+          keyword.toLowerCase().includes(searchQuery.toLowerCase())
+        ) || item.label.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : quickActions;
+
+  const filteredNavigationItems = searchQuery 
+    ? navigationItems.filter(item => 
+        item.keywords.some(keyword => 
+          keyword.toLowerCase().includes(searchQuery.toLowerCase())
+        ) || item.label.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : navigationItems;
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().includes('MAC');
+      if ((isMac ? e.metaKey : e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        const el = document.getElementById('global-search-input') as HTMLInputElement | null;
+        if (el) {
+          el.focus();
+          setSearchAnchorEl(el);
+          setShowSearch(true);
+        }
+      }
+      if (e.key === 'Escape') {
+        setShowSearch(false);
+        setSearchAnchorEl(null);
+      }
+    };
+    
+    window.addEventListener('keydown', handler);
+    return () => {
+      window.removeEventListener('keydown', handler);
+      if (closeTimeout) {
+        clearTimeout(closeTimeout);
+      }
+    };
+  }, [closeTimeout]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeout) {
+        clearTimeout(closeTimeout);
+      }
+    };
+  }, [closeTimeout]);
 
   // Function to get page title based on current route
   const getPageTitle = () => {
@@ -75,7 +153,6 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
           },
         }}
       >
-        <Toolbar />
         {/* Modern Company Logo Section */}
         <Fade in timeout={600}>
           <Card sx={{ 
@@ -89,7 +166,7 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
           }}>
             <CardContent sx={{ textAlign: 'center', py: 3 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
-                {companyDetails?.logoUrl ? (
+            {companyDetails?.logoUrl ? (
                   <Box
                     sx={{
                       width: 80,
@@ -105,41 +182,41 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                       mb: 2
                     }}
                   >
-                    <img
-                      src={companyDetails.logoUrl}
-                      alt="Company Logo"
-                      style={{
+              <img
+                src={companyDetails.logoUrl}
+                alt="Company Logo"
+                style={{
                         width: '100%',
                         height: '100%',
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        background: '#fff'
-                      }}
-                    />
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  background: '#fff'
+                }}
+              />
                   </Box>
                 ) : (
                   <Box
                     sx={{
                       width: 80,
                       height: 80,
-                      borderRadius: '50%',
+                  borderRadius: '50%',
                       background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                       color: 'white',
                       fontWeight: 700,
                       fontSize: 16,
-                      textAlign: 'center',
+                  textAlign: 'center',
                       lineHeight: 1.2,
                       boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
                       mb: 2
-                    }}
-                  >
-                    Company<br />Logo
+                }}
+              >
+                Company<br />Logo
                   </Box>
-                )}
-              </Box>
+            )}
+          </Box>
               <Typography 
                 variant="h6" 
                 sx={{ 
@@ -152,8 +229,8 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                   fontSize: '1.1rem'
                 }}
               >
-                {companyDetails?.name || "Company name"}
-              </Typography>
+            {companyDetails?.name || "Company name"}
+          </Typography>
             </CardContent>
           </Card>
         </Fade>
@@ -161,7 +238,7 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
         <Box sx={{ overflow: 'auto', px: 1 }}>
           <Fade in timeout={800}>
             <List sx={{ py: 1 }}>
-              {/* 1. Dashboard */}
+            {/* 1. Dashboard */}
               <ListItem disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton 
                   component={NavLink} 
@@ -189,9 +266,9 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <ListItemIcon>
+                <ListItemIcon>
                     <DashboardIcon sx={{ color: '#667eea' }} />
-                  </ListItemIcon>
+                </ListItemIcon>
                   <ListItemText 
                     primary="Dashboard" 
                     primaryTypographyProps={{ 
@@ -199,10 +276,10 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                       fontSize: '0.95rem'
                     }}
                   />
-                </ListItemButton>
-              </ListItem>
+              </ListItemButton>
+            </ListItem>
 
-              {/* 2. Location */}
+            {/* 2. Location */}
               <ListItem disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton 
                   component={NavLink} 
@@ -230,9 +307,9 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <ListItemIcon>
+                <ListItemIcon>
                     <DashboardCustomizeIcon sx={{ color: '#667eea' }} />
-                  </ListItemIcon>
+                </ListItemIcon>
                   <ListItemText 
                     primary="Location" 
                     primaryTypographyProps={{ 
@@ -240,10 +317,10 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                       fontSize: '0.95rem'
                     }}
                   />
-                </ListItemButton>
-              </ListItem>
+              </ListItemButton>
+            </ListItem>
 
-              {/* 3. Settings */}
+            {/* 3. Settings */}
               <ListItem disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton 
                   component={NavLink} 
@@ -271,9 +348,9 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <ListItemIcon>
+                <ListItemIcon>
                     <SettingsIcon sx={{ color: '#667eea' }} />
-                  </ListItemIcon>
+                </ListItemIcon>
                   <ListItemText 
                     primary="Settings" 
                     primaryTypographyProps={{ 
@@ -281,10 +358,10 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                       fontSize: '0.95rem'
                     }}
                   />
-                </ListItemButton>
-              </ListItem>
+              </ListItemButton>
+            </ListItem>
 
-              {/* 4. Teams Management */}
+            {/* 4. Teams Management */}
               <ListItem disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton 
                   component={NavLink} 
@@ -312,9 +389,9 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <ListItemIcon>
+                <ListItemIcon>
                     <GroupIcon sx={{ color: '#667eea' }} />
-                  </ListItemIcon>
+                </ListItemIcon>
                   <ListItemText 
                     primary="Teams Management" 
                     primaryTypographyProps={{ 
@@ -322,10 +399,10 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                       fontSize: '0.95rem'
                     }}
                   />
-                </ListItemButton>
-              </ListItem>
+              </ListItemButton>
+            </ListItem>
 
-              {/* 5. Files or SOPs */}
+            {/* 5. Files or SOPs */}
               <ListItem disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton 
                   component={NavLink} 
@@ -353,9 +430,9 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <ListItemIcon>
+                <ListItemIcon>
                     <DescriptionIcon sx={{ color: '#667eea' }} />
-                  </ListItemIcon>
+                </ListItemIcon>
                   <ListItemText 
                     primary="Files or SOPs" 
                     primaryTypographyProps={{ 
@@ -363,10 +440,10 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                       fontSize: '0.95rem'
                     }}
                   />
-                </ListItemButton>
-              </ListItem>
+              </ListItemButton>
+            </ListItem>
 
-              {/* 6. Manage Monitoring */}
+            {/* 6. Manage Monitoring */}
               <ListItem disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton 
                   component={NavLink} 
@@ -394,9 +471,9 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <ListItemIcon>
+                <ListItemIcon>
                     <MonitorIcon sx={{ color: '#667eea' }} />
-                  </ListItemIcon>
+                </ListItemIcon>
                   <ListItemText 
                     primary="Manage Monitoring" 
                     primaryTypographyProps={{ 
@@ -404,10 +481,10 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                       fontSize: '0.95rem'
                     }}
                   />
-                </ListItemButton>
-              </ListItem>
+              </ListItemButton>
+            </ListItem>
 
-              {/* 7. Manage Tasks */}
+            {/* 7. Manage Tasks */}
               <ListItem disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton 
                   component={NavLink} 
@@ -435,9 +512,9 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <ListItemIcon>
+                <ListItemIcon>
                     <AssignmentIcon sx={{ color: '#667eea' }} />
-                  </ListItemIcon>
+                </ListItemIcon>
                   <ListItemText 
                     primary="Manage Tasks" 
                     primaryTypographyProps={{ 
@@ -445,10 +522,10 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                       fontSize: '0.95rem'
                     }}
                   />
-                </ListItemButton>
-              </ListItem>
+              </ListItemButton>
+            </ListItem>
 
-              {/* 8. Audit */}
+            {/* 8. Audit */}
               <ListItem disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton 
                   component={NavLink} 
@@ -476,9 +553,9 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <ListItemIcon>
+                <ListItemIcon>
                     <VerifiedIcon sx={{ color: '#667eea' }} />
-                  </ListItemIcon>
+                </ListItemIcon>
                   <ListItemText 
                     primary="Audit" 
                     primaryTypographyProps={{ 
@@ -486,10 +563,10 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                       fontSize: '0.95rem'
                     }}
                   />
-                </ListItemButton>
-              </ListItem>
+              </ListItemButton>
+            </ListItem>
 
-              {/* 9. Chat */}
+            {/* 9. Chat */}
               <ListItem disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton 
                   component={NavLink} 
@@ -517,9 +594,9 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <ListItemIcon>
+                <ListItemIcon>
                     <ChatIcon sx={{ color: '#667eea' }} />
-                  </ListItemIcon>
+                </ListItemIcon>
                   <ListItemText 
                     primary="Chat" 
                     primaryTypographyProps={{ 
@@ -527,9 +604,9 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                       fontSize: '0.95rem'
                     }}
                   />
-                </ListItemButton>
-              </ListItem>
-            </List>
+              </ListItemButton>
+            </ListItem>
+          </List>
           </Fade>
         </Box>
       </Drawer>
@@ -542,31 +619,173 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
             background: 'rgba(255, 255, 255, 0.9)',
             backdropFilter: 'blur(20px)',
             borderBottom: '1px solid rgba(102, 126, 234, 0.2)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            zIndex: (theme) => theme.zIndex.modal + 3
           }}
         >
-          <Toolbar sx={{ justifyContent: 'space-between', minHeight: 64, px: 3 }}>
-            {/* Page Title - Left Side */}
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Typography 
-                variant="h5" 
-                sx={{ 
-                  fontWeight: 700, 
-                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  fontSize: '1.5rem',
-                  letterSpacing: '0.5px'
+          <Toolbar sx={{ justifyContent: 'space-between', minHeight: 64, px: 3, gap: 2 }}>
+            {/* Global Search - Left Side (replaces title) */}
+            <Box sx={{ flex: 1, maxWidth: 640, position: 'relative' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  borderRadius: 3,
+                  border: '1px solid rgba(102, 126, 234, 0.3)',
+                  boxShadow: '0 6px 20px rgba(102, 126, 234, 0.12)',
+                  px: 2,
+                  py: 0.5,
+                  transition: 'all 0.25s ease',
+                  '&:focus-within': {
+                    borderColor: '#667eea',
+                    boxShadow: '0 8px 28px rgba(102, 126, 234, 0.22)',
+                  }
                 }}
               >
-                {getPageTitle()}
-              </Typography>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#667eea"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input
+                  id="global-search-input"
+                  placeholder="⚡ Quick Finder - Search & navigate instantly (Press ⌘K / Ctrl+K)"
+                  style={{
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    width: '100%',
+                    fontSize: '0.95rem',
+                    padding: '10px 8px'
+                  }}
+                  onFocus={(e) => {
+                    setSearchAnchorEl(e.currentTarget);
+                    setShowSearch(true);
+                  }}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (!showSearch) {
+                      setShowSearch(true);
+                    }
+                  }}
+                  value={searchQuery}
+                />
+              </Box>
+              {/* Suggestions dropdown */}
+              <Popper
+                open={showSearch}
+                anchorEl={searchAnchorEl}
+                placement="bottom-start"
+                sx={{ zIndex: 9999 }}
+              >
+                <ClickAwayListener onClickAway={(event) => {
+                  // Don't close if clicking on the search input
+                  if (event.target === searchAnchorEl || searchAnchorEl?.contains(event.target as Node)) {
+                    return;
+                  }
+                  
+                  // Clear any existing timeout
+                  if (closeTimeout) {
+                    clearTimeout(closeTimeout);
+                  }
+                  
+                  // Set a small delay before closing to prevent flickering
+                  const timeout = setTimeout(() => {
+                    setShowSearch(false);
+                    setSearchAnchorEl(null);
+                  }, 100);
+                  
+                  setCloseTimeout(timeout);
+                }}>
+                  <Paper
+                    sx={{
+                      width: 640,
+                      maxWidth: 'calc(100vw - 280px)',
+                      background: 'rgba(255,255,255,0.98)',
+                      backdropFilter: 'blur(12px)',
+                      borderRadius: 3,
+                      border: '1px solid rgba(102,126,234,0.2)',
+                      boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
+                      p: 1,
+                      mt: 1
+                    }}
+                  >
+                    {/* Quick Actions */}
+                    {filteredQuickActions.length > 0 && (
+                      <Box sx={{ px: 1, py: 0.5 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: '#667eea' }}>🚀 Quick Actions</Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+                          {filteredQuickActions.map((item) => (
+                            <Button
+                              key={item.label}
+                              onClick={() => { 
+                                item.action(); 
+                                setShowSearch(false);
+                                setSearchAnchorEl(null);
+                              }}
+                              sx={{
+                                px: 1.5,
+                                py: 0.75,
+                                borderRadius: 2,
+                                border: '1px solid rgba(102,126,234,0.3)',
+                                textTransform: 'none',
+                                color: '#34495e',
+                                background: 'linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.06))',
+                                '&:hover': { background: 'linear-gradient(135deg, rgba(102,126,234,0.14), rgba(118,75,162,0.1))' }
+                              }}
+                            >
+                              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>{item.label}</Typography>
+                            </Button>
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
+                    {filteredQuickActions.length > 0 && filteredNavigationItems.length > 0 && <Divider sx={{ my: 1 }} />}
+                    {/* Navigation */}
+                    {filteredNavigationItems.length > 0 && (
+                      <Box sx={{ px: 1, py: 0.5 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: '#667eea' }}>🧭 Navigation</Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+                          {filteredNavigationItems.map((link) => (
+                            <Button
+                              key={link.label}
+                              onClick={() => { 
+                                navigate(link.path); 
+                                setShowSearch(false);
+                                setSearchAnchorEl(null);
+                              }}
+                              sx={{
+                                px: 1.5,
+                                py: 0.75,
+                                borderRadius: 2,
+                                border: '1px solid rgba(102,126,234,0.3)',
+                                textTransform: 'none',
+                                color: '#34495e',
+                                background: 'linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.06))',
+                                '&:hover': { background: 'linear-gradient(135deg, rgba(102,126,234,0.14), rgba(118,75,162,0.1))' }
+                              }}
+                            >
+                              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>{link.label}</Typography>
+                            </Button>
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
+                    
+                    {/* No results found */}
+                    {filteredQuickActions.length === 0 && filteredNavigationItems.length === 0 && searchQuery && (
+                      <Box sx={{ px: 2, py: 3, textAlign: 'center' }}>
+                        <Typography variant="body2" sx={{ color: '#666', fontStyle: 'italic' }}>
+                          No results found for "{searchQuery}"
+                        </Typography>
+                      </Box>
+                    )}
+                  </Paper>
+                </ClickAwayListener>
+              </Popper>
             </Box>
 
             {/* Right Side - Icons and Profile */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Tooltip title="Help">
+            <Tooltip title="Help">
                 <IconButton 
                   sx={{ 
                     background: 'linear-gradient(45deg, #4CAF50, #45a049)',
@@ -579,10 +798,10 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                     boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)'
                   }}
                 >
-                  <HelpOutlineIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Notifications">
+                <HelpOutlineIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Notifications">
                 <IconButton 
                   sx={{ 
                     background: 'linear-gradient(45deg, #FF9800, #F57C00)',
@@ -595,10 +814,10 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                     boxShadow: '0 4px 12px rgba(255, 152, 0, 0.3)'
                   }}
                 >
-                  <NotificationsNoneIcon />
-                </IconButton>
-              </Tooltip>
-              <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
+                <NotificationsNoneIcon />
+              </IconButton>
+            </Tooltip>
+            <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
                 <IconButton 
                   onClick={handleProfileClick} 
                   size="small" 
@@ -641,13 +860,12 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
                   >
                     {displayName}
                   </Typography>
-                </IconButton>
+              </IconButton>
               </Box>
             </Box>
           </Toolbar>
         </AppBar>
-        <Box sx={{ p: 3 }}>
-          <Toolbar />
+        <Box sx={{ p: 0 }}>
           <Outlet />
         </Box>
       </Box>
