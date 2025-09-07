@@ -22,14 +22,16 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import EmailIcon from '@mui/icons-material/Email';
 import WorkIcon from '@mui/icons-material/Work';
 import BusinessIcon from '@mui/icons-material/Business';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import { auth, db, storage } from '../firebase';
-import { updateProfile } from 'firebase/auth';
+import { updateProfile, signOut } from 'firebase/auth';
 import { doc, getDocs, collectionGroup, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useNavigate } from 'react-router-dom';
 
 interface ProfileModalProps {
   open: boolean;
@@ -38,6 +40,7 @@ interface ProfileModalProps {
 }
 
 export default function ProfileModal({ open, onClose, onProfileUpdate }: ProfileModalProps) {
+  const navigate = useNavigate();
   const user = auth.currentUser;
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [photoURL, setPhotoURL] = useState(user?.photoURL || '');
@@ -201,6 +204,15 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
     setSuccess('');
     setError('');
     onClose();
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/login');
+    } catch (err: any) {
+      setError('Failed to logout. Please try again.');
+    }
   };
 
   return (
@@ -422,13 +434,24 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
                   </Button>
                 </>
               ) : (
-                <Button
-                  variant="outlined"
-                  onClick={handleClose}
-                  fullWidth
-                >
-                  Close
-                </Button>
+                <>
+                  <Button
+                    variant="outlined"
+                    onClick={handleClose}
+                    fullWidth
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    onClick={handleLogout}
+                    fullWidth
+                    startIcon={<ExitToAppIcon />}
+                  >
+                    Logout
+                  </Button>
+                </>
               )}
             </Box>
           </Box>
