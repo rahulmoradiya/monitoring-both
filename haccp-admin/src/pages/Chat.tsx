@@ -27,7 +27,12 @@ import {
   AppBar,
   Toolbar,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Card,
+  CardContent,
+  CardHeader,
+  Fade,
+  Stack
 } from '@mui/material';
 import {
   Chat as ChatIcon,
@@ -603,31 +608,49 @@ export default function Chat() {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        bgcolor: 'grey.50',
+        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+        minHeight: '100vh'
       }}>
-        <Box sx={{ textAlign: 'center' }}>
-          <Box
-            sx={{
-              bgcolor: 'primary.main',
-              borderRadius: 2,
-              p: 2,
-              mb: 3,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
-            }}
-          >
-            <ChatIcon sx={{ fontSize: 32, color: 'white' }} />
-          </Box>
-          <Typography variant="h6" sx={{ mb: 2, color: 'primary.main', fontWeight: 600 }}>
-            Loading Chat
-          </Typography>
-          <CircularProgress size={40} sx={{ color: 'primary.main' }} />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Fetching your conversations...
-          </Typography>
-        </Box>
+        <Fade in timeout={600}>
+          <Card sx={{ 
+            p: 4, 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            textAlign: 'center'
+          }}>
+            <Box
+              sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: 3,
+                p: 3,
+                mb: 3,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+              }}
+            >
+              <ChatIcon sx={{ fontSize: 48, color: 'white', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+            </Box>
+            <Typography variant="h5" sx={{ 
+              mb: 2, 
+              background: 'linear-gradient(45deg, #667eea, #764ba2)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontWeight: 700
+            }}>
+              Loading Chat
+            </Typography>
+            <CircularProgress size={50} sx={{ color: '#667eea', mb: 2 }} />
+            <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.1rem' }}>
+              Fetching your conversations...
+            </Typography>
+          </Card>
+        </Fade>
       </Box>
     );
   }
@@ -637,213 +660,406 @@ export default function Chat() {
 
   if (hasNoData) {
     return (
-      <Box sx={{ p: 3 }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <ChatIcon sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 600, color: 'primary.main' }}>
-              Chat
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* No Data Message */}
-        <Paper sx={{ p: 6, textAlign: 'center', bgcolor: 'grey.50' }}>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h3" sx={{ color: 'text.secondary', mb: 2 }}>
-              💬
-            </Typography>
-            <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 600, mb: 2 }}>
-              Welcome to Chat!
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              This is your first time here. The chat system will be available once you have team members and start conversations. You'll be able to create group chats and have direct conversations with your team.
-            </Typography>
-          </Box>
-          
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
-              To get started with chat:
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                • Add team members in the "Teams Management" section
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                • Create group chats for different departments or projects
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                • Start direct conversations with individual team members
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                • Share updates, ask questions, and collaborate in real-time
+      <Box sx={{ 
+        p: 3, 
+        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+        minHeight: '100vh',
+        position: 'relative'
+      }}>
+        {/* Modern Header */}
+        <Fade in timeout={600}>
+          <Card sx={{ 
+            mb: 4, 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <Box sx={{ 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              p: 3,
+              textAlign: 'center'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                <ChatIcon sx={{ 
+                  fontSize: 48, 
+                  color: 'white', 
+                  mr: 2,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                }} />
+                <Typography variant="h3" component="h1" sx={{ 
+                  fontWeight: 700, 
+                  color: 'white',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                }}>
+                  Chat
+                </Typography>
+              </Box>
+              <Typography variant="h6" sx={{ 
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontWeight: 400,
+                textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+              }}>
+                Connect and collaborate with your team
               </Typography>
             </Box>
-          </Box>
-        </Paper>
+          </Card>
+        </Fade>
+
+        {/* Modern No Data Message */}
+        <Fade in timeout={800}>
+          <Card sx={{ 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <CardContent sx={{ p: 6, textAlign: 'center' }}>
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h1" sx={{ 
+                  color: '#667eea', 
+                  mb: 3,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                }}>
+                  💬
+                </Typography>
+                <Typography variant="h4" sx={{ 
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 700, 
+                  mb: 2 
+                }}>
+                  Welcome to Chat!
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 4, fontSize: '1.1rem' }}>
+                  This is your first time here. The chat system will be available once you have team members and start conversations. You'll be able to create group chats and have direct conversations with your team.
+                </Typography>
+              </Box>
+              
+              <Box sx={{ 
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+                borderRadius: 2,
+                p: 3,
+                border: '1px solid rgba(102, 126, 234, 0.2)'
+              }}>
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 600, 
+                  mb: 3,
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  To get started with chat:
+                </Typography>
+                <Stack spacing={1} alignItems="flex-start">
+                  <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ 
+                      width: 8, 
+                      height: 8, 
+                      borderRadius: '50%', 
+                      background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                      mr: 2,
+                      flexShrink: 0
+                    }} />
+                    Add team members in the "Teams Management" section
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ 
+                      width: 8, 
+                      height: 8, 
+                      borderRadius: '50%', 
+                      background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                      mr: 2,
+                      flexShrink: 0
+                    }} />
+                    Create group chats for different departments or projects
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ 
+                      width: 8, 
+                      height: 8, 
+                      borderRadius: '50%', 
+                      background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                      mr: 2,
+                      flexShrink: 0
+                    }} />
+                    Start direct conversations with individual team members
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ 
+                      width: 8, 
+                      height: 8, 
+                      borderRadius: '50%', 
+                      background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                      mr: 2,
+                      flexShrink: 0
+                    }} />
+                    Share updates, ask questions, and collaborate in real-time
+                  </Typography>
+                </Stack>
+              </Box>
+            </CardContent>
+          </Card>
+        </Fade>
       </Box>
     );
   }
 
   return (
     <Box sx={{ 
-      height: '100vh',
-      display: 'flex',
-      overflow: 'hidden',
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      minHeight: '100vh',
+      p: { xs: 2, sm: 3 }
     }}>
-      {/* Left Sidebar - Chat List */}
-      <Box sx={{ 
-        width: { xs: showChatDetail ? 0 : '100%', md: showChatDetail ? '350px' : '100%' },
-        minWidth: { md: showChatDetail ? '350px' : 'auto' },
-        maxWidth: { md: showChatDetail ? '400px' : 'none' },
-        display: 'flex',
-        flexDirection: 'column',
-        borderRight: { md: showChatDetail ? '1px solid' : 'none' },
-        borderColor: 'divider',
-        transition: 'all 0.3s ease-in-out',
-        overflow: 'hidden',
-      }}>
-        {/* Header */}
-        <Box sx={{ 
-          p: { xs: 2, sm: 3 },
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          flexShrink: 0,
-        }}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between', 
-            mb: 2,
+      <Box sx={{ maxWidth: 1400, mx: 'auto', width: '100%' }}>
+        {/* Modern Header */}
+        <Fade in timeout={600}>
+          <Card sx={{ 
+            mb: 3, 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box
-                sx={{
-                  bgcolor: 'primary.main',
-                  borderRadius: 2,
-                  p: 1.5,
-                  mr: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
-                }}
-              >
-                <ChatIcon sx={{ fontSize: 24, color: 'white' }} />
-              </Box>
-              <Typography 
-                variant="h5" 
-                component="h1" 
-                sx={{ 
-                  fontWeight: 700, 
-                  color: 'primary.main',
-                }}
-              >
+            <Box sx={{ 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              p: { xs: 2, sm: 3 },
+              textAlign: 'center'
+            }}>
+              <Typography variant="h4" sx={{ 
+                fontWeight: 700, 
+                color: 'white',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                mb: 0.5,
+                fontSize: { xs: '1.5rem', sm: '2rem' }
+              }}>
                 Chat
               </Typography>
+              <Typography variant="body1" sx={{ 
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontWeight: 400,
+                textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                fontSize: { xs: '0.9rem', sm: '1rem' }
+              }}>
+                Connect and collaborate with your team
+              </Typography>
             </Box>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setNewGroupDialogOpen(true)}
-              sx={{
-                borderRadius: 2,
-                px: 2,
-                py: 1,
-                textTransform: 'none',
-                fontWeight: 600,
-                boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
-                '&:hover': {
-                  boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)',
-                },
-                fontSize: '0.875rem',
+          </Card>
+        </Fade>
+
+        {/* Chat Container */}
+        <Box sx={{ 
+          height: 'calc(100vh - 160px)',
+          display: 'flex',
+          overflow: 'hidden',
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          minHeight: '500px',
+        }}>
+          {/* Modern Left Sidebar - Chat List */}
+          <Fade in timeout={800}>
+            <Box sx={{ 
+              width: { xs: showChatDetail ? 0 : '100%', md: showChatDetail ? '380px' : '100%' },
+              minWidth: { md: showChatDetail ? '380px' : 'auto' },
+              maxWidth: { md: showChatDetail ? '450px' : 'none' },
+              display: 'flex',
+              flexDirection: 'column',
+              borderRight: { md: showChatDetail ? '1px solid' : 'none' },
+              borderColor: 'rgba(102, 126, 234, 0.2)',
+              transition: 'all 0.3s ease-in-out',
+              overflow: 'hidden',
+              flexShrink: 0,
+            }}>
+          {/* Modern Header */}
+          <Box sx={{ 
+            p: { xs: 2, sm: 3 },
+            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+            borderBottom: '1px solid',
+            borderColor: 'rgba(102, 126, 234, 0.2)',
+            flexShrink: 0,
+          }}>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              mb: 2,
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: 3,
+                    p: 2,
+                    mr: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+                  }}
+                >
+                  <ChatIcon sx={{ fontSize: 28, color: 'white', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+                </Box>
+                <Typography 
+                  variant="h5" 
+                  component="h1" 
+                  sx={{ 
+                    fontWeight: 700, 
+                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  Chat
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setNewGroupDialogOpen(true)}
+                sx={{
+                  background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                  borderRadius: 3,
+                  px: 3,
+                  py: 1.5,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  boxShadow: '0 8px 32px rgba(76, 175, 80, 0.3)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 12px 40px rgba(76, 175, 80, 0.4)',
+                  },
+                  transition: 'all 0.3s ease',
+                  fontSize: '0.9rem',
+                }}
+              >
+                New
+              </Button>
+            </Box>
+
+            {/* Modern Search Bar */}
+            <TextField
+              fullWidth
+              placeholder="Search conversations..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: '#667eea' }} />,
               }}
-            >
-              New
-            </Button>
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 3,
+                  background: 'rgba(255, 255, 255, 0.8)',
+                  backdropFilter: 'blur(10px)',
+                  '& fieldset': {
+                    borderColor: 'rgba(102, 126, 234, 0.3)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(102, 126, 234, 0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#667eea',
+                    borderWidth: 2,
+                  },
+                },
+              }}
+            />
           </Box>
 
-          {/* Search Bar */}
-          <TextField
-            fullWidth
-            placeholder="Search conversations..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'primary.main',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'primary.main',
-                  borderWidth: 2,
-                },
-              },
-            }}
-          />
-        </Box>
-
-        {/* Chat List */}
-        <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-          <List sx={{ p: 0 }}>
-            {loadingChats ? (
-              // Skeleton loading for chat items
-              Array.from({ length: 5 }).map((_, index) => (
-                <ListItem key={index} sx={{ py: 2, px: 3 }}>
-                  <ListItemAvatar sx={{ minWidth: 48 }}>
-                    <Skeleton variant="circular" width={48} height={48} />
-                  </ListItemAvatar>
+          {/* Modern Chat List */}
+          <Box sx={{ 
+            flexGrow: 1, 
+            overflow: 'auto',
+            '&::-webkit-scrollbar': {
+              width: '6px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'rgba(102, 126, 234, 0.1)',
+              borderRadius: '3px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: 'linear-gradient(135deg, #667eea, #764ba2)',
+              borderRadius: '3px',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #5a6fd8, #6a4190)',
+              }
+            },
+          }}>
+            <List sx={{ p: 0 }}>
+              {loadingChats ? (
+                // Modern Skeleton loading for chat items
+                Array.from({ length: 5 }).map((_, index) => (
+                  <ListItem key={index} sx={{ py: 2, px: 3 }}>
+                    <ListItemAvatar sx={{ minWidth: 48 }}>
+                      <Skeleton variant="circular" width={48} height={48} sx={{ borderRadius: 3 }} />
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Skeleton variant="text" width="60%" height={24} />
+                          <Skeleton variant="rectangular" width={60} height={20} sx={{ borderRadius: 2 }} />
+                        </Box>
+                      }
+                      secondary={
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                          <Skeleton variant="text" width="80%" height={20} />
+                          <Skeleton variant="circular" width={20} height={20} />
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                ))
+              ) : filteredChatItems.length === 0 ? (
+                <ListItem sx={{ py: 6 }}>
                   <ListItemText
                     primary={
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Skeleton variant="text" width="60%" height={24} />
-                        <Skeleton variant="rectangular" width={60} height={20} sx={{ borderRadius: 1 }} />
-                      </Box>
-                    }
-                    secondary={
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                        <Skeleton variant="text" width="80%" height={20} />
-                        <Skeleton variant="circular" width={20} height={20} />
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Typography variant="h3" sx={{ mb: 2, opacity: 0.5 }}>
+                          💬
+                        </Typography>
+                        <Typography variant="h6" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+                          No conversations yet
+                        </Typography>
+                        <Typography color="text.secondary">
+                          Start a chat with someone!
+                        </Typography>
                       </Box>
                     }
                   />
                 </ListItem>
-              ))
-            ) : filteredChatItems.length === 0 ? (
-              <ListItem sx={{ py: 4 }}>
-                <ListItemText
-                  primary={
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-                        💬
-                      </Typography>
-                      <Typography color="text.secondary">
-                        No conversations yet. Start a chat with someone!
-                      </Typography>
-                    </Box>
-                  }
-                />
-              </ListItem>
-            ) : (
-              filteredChatItems.map((chatItem, index) => (
-                <ListItem 
-                  key={chatItem.id} 
-                  disablePadding
-                  sx={{
-                    borderBottom: index < filteredChatItems.length - 1 ? '1px solid' : 'none',
-                    borderColor: 'divider',
-                    bgcolor: selectedChat?.id === chatItem.id ? 'action.selected' : 'transparent',
-                    '&:hover': {
-                      bgcolor: selectedChat?.id === chatItem.id ? 'action.selected' : 'action.hover',
-                    },
-                    transition: 'background-color 0.2s ease-in-out',
-                  }}
-                >
+              ) : (
+                filteredChatItems.map((chatItem, index) => (
+                  <ListItem 
+                    key={chatItem.id} 
+                    disablePadding
+                    sx={{
+                      borderBottom: index < filteredChatItems.length - 1 ? '1px solid' : 'none',
+                      borderColor: 'rgba(102, 126, 234, 0.1)',
+                      bgcolor: selectedChat?.id === chatItem.id 
+                        ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.08))' 
+                        : 'transparent',
+                      '&:hover': {
+                        bgcolor: selectedChat?.id === chatItem.id 
+                          ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.08))' 
+                          : 'linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.02))',
+                        transform: 'translateX(4px)',
+                      },
+                      transition: 'all 0.3s ease-in-out',
+                    }}
+                  >
                   <ListItemButton 
                     onClick={() => handleChatClick(chatItem)}
                     sx={{ 
@@ -955,10 +1171,14 @@ export default function Chat() {
                             <Chip
                               label={chatItem.type === 'group' ? 'Group' : 'Direct'}
                               size="small"
-                              color={chatItem.type === 'group' ? 'primary' : 'secondary'}
                               sx={{ 
                                 fontSize: '0.65rem',
                                 height: '18px',
+                                background: chatItem.type === 'group' 
+                                  ? 'linear-gradient(45deg, #2196F3, #1976D2)'
+                                  : 'linear-gradient(45deg, #4CAF50, #45a049)',
+                                color: 'white',
+                                fontWeight: 600,
                                 '& .MuiChip-label': {
                                   px: 0.5,
                                 }
@@ -1011,30 +1231,34 @@ export default function Chat() {
                   </ListItemButton>
                 </ListItem>
               ))
-            )}
-          </List>
+              )}
+            </List>
+          </Box>
         </Box>
-      </Box>
+      </Fade>
 
-      {/* Right Side - Chat Detail */}
+      {/* Modern Right Side - Chat Detail */}
       {showChatDetail && selectedChat && (
-        <Box sx={{ 
-          flexGrow: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh',
-          overflow: 'hidden',
-        }}>
-          {/* Chat Header */}
-          <AppBar 
-            position="static" 
-            elevation={0}
-            sx={{
-              bgcolor: 'white',
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
+        <Fade in timeout={800}>
+          <Box sx={{ 
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            overflow: 'hidden',
+            minWidth: 0,
+          }}>
+            {/* Modern Chat Header */}
+            <AppBar 
+              position="static" 
+              elevation={0}
+              sx={{
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+                borderBottom: '1px solid',
+                borderColor: 'rgba(102, 126, 234, 0.2)',
+                backdropFilter: 'blur(20px)',
+              }}
+            >
             <Toolbar sx={{ px: 2 }}>
               {isMobile && (
                 <IconButton 
@@ -1148,6 +1372,20 @@ export default function Chat() {
             p: 2, 
             bgcolor: 'grey.50',
             backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(25, 118, 210, 0.05) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(156, 39, 176, 0.05) 0%, transparent 50%)',
+            '&::-webkit-scrollbar': {
+              width: '6px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'rgba(102, 126, 234, 0.1)',
+              borderRadius: '3px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: 'linear-gradient(135deg, #667eea, #764ba2)',
+              borderRadius: '3px',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #5a6fd8, #6a4190)',
+              }
+            },
           }}>
             <List sx={{ p: 0 }}>
               {messages.length === 0 ? (
@@ -1370,15 +1608,16 @@ export default function Chat() {
             </List>
           </Box>
 
-          {/* Message Input */}
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 0,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'white',
-            flexShrink: 0,
-          }}>
+            {/* Modern Message Input */}
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 0,
+              borderTop: '1px solid',
+              borderColor: 'rgba(102, 126, 234, 0.2)',
+              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.02))',
+              backdropFilter: 'blur(20px)',
+              flexShrink: 0,
+            }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
               <TextField
                 fullWidth
@@ -1393,12 +1632,16 @@ export default function Chat() {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 3,
-                    bgcolor: 'grey.50',
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'primary.main',
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    backdropFilter: 'blur(10px)',
+                    '& fieldset': {
+                      borderColor: 'rgba(102, 126, 234, 0.3)',
                     },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'primary.main',
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(102, 126, 234, 0.5)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#667eea',
                       borderWidth: 2,
                     },
                   },
@@ -1410,32 +1653,74 @@ export default function Chat() {
                 disabled={!newMessage.trim()}
                 sx={{ 
                   mb: 0.5,
-                  bgcolor: newMessage.trim() ? 'primary.main' : 'grey.300',
-                  color: newMessage.trim() ? 'white' : 'grey.500',
+                  background: newMessage.trim() 
+                    ? 'linear-gradient(45deg, #667eea, #764ba2)'
+                    : 'linear-gradient(45deg, #9E9E9E, #757575)',
+                  color: 'white',
                   '&:hover': {
-                    bgcolor: newMessage.trim() ? 'primary.dark' : 'grey.400',
+                    background: newMessage.trim() 
+                      ? 'linear-gradient(45deg, #5a6fd8, #6a4190)'
+                      : 'linear-gradient(45deg, #757575, #616161)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: newMessage.trim() 
+                      ? '0 8px 32px rgba(102, 126, 234, 0.4)'
+                      : '0 4px 16px rgba(158, 158, 158, 0.3)',
                   },
                   '&:disabled': {
-                    bgcolor: 'grey.300',
-                    color: 'grey.500',
+                    background: 'linear-gradient(45deg, #9E9E9E, #757575)',
+                    color: 'white',
                   },
-                  transition: 'all 0.2s ease-in-out',
-                  boxShadow: newMessage.trim() ? '0 2px 8px rgba(25, 118, 210, 0.3)' : 'none',
+                  transition: 'all 0.3s ease',
+                  boxShadow: newMessage.trim() ? '0 4px 16px rgba(102, 126, 234, 0.3)' : 'none',
                   width: 48,
                   height: 48,
+                  borderRadius: 3,
                 }}
               >
                 <SendIcon />
               </IconButton>
             </Box>
-          </Paper>
-        </Box>
+            </Paper>
+          </Box>
+        </Fade>
       )}
-
-      {/* New Group Dialog */}
-      <Dialog open={newGroupDialogOpen} onClose={() => setNewGroupDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create New Group</DialogTitle>
-        <DialogContent>
+        </Box>
+      </Box>
+      
+      {/* Modern New Group Dialog */}
+      <Dialog 
+        open={newGroupDialogOpen} 
+        onClose={() => setNewGroupDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          textAlign: 'center',
+          py: 3
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <GroupIcon sx={{ mr: 2, fontSize: 32, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+            <Typography variant="h5" sx={{ 
+              fontWeight: 700,
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}>
+              Create New Group
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
           <TextField
             fullWidth
             label="Group Name"
@@ -1443,6 +1728,19 @@ export default function Chat() {
             onChange={(e) => setNewGroupData({ ...newGroupData, name: e.target.value })}
             margin="normal"
             required
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#667eea',
+                }
+              }
+            }}
           />
           <TextField
             fullWidth
@@ -1452,6 +1750,19 @@ export default function Chat() {
             margin="normal"
             multiline
             rows={2}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#667eea',
+                }
+              }
+            }}
           />
           <FormControl fullWidth margin="normal">
             <InputLabel>Select Members</InputLabel>
@@ -1460,6 +1771,19 @@ export default function Chat() {
               value={newGroupData.selectedUsers}
               onChange={(e) => setNewGroupData({ ...newGroupData, selectedUsers: e.target.value as string[] })}
               label="Select Members"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: 'rgba(102, 126, 234, 0.3)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(102, 126, 234, 0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#667eea',
+                  }
+                }
+              }}
             >
               {allUsers
                 .filter(user => user.uid !== currentUser?.uid)
@@ -1476,12 +1800,43 @@ export default function Chat() {
             </Select>
           </FormControl>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setNewGroupDialogOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ 
+          p: 3, 
+          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.02))',
+          borderTop: '1px solid rgba(102, 126, 234, 0.1)'
+        }}>
+          <Button 
+            onClick={() => setNewGroupDialogOpen(false)}
+            sx={{
+              background: 'linear-gradient(45deg, #9E9E9E, #757575)',
+              color: 'white',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #757575, #616161)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(158, 158, 158, 0.3)'
+              },
+              transition: 'all 0.3s ease',
+              fontWeight: 600,
+              px: 3
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             variant="contained"
             onClick={createNewGroup}
             disabled={!newGroupData.name || newGroupData.selectedUsers.length === 0}
+            sx={{
+              background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)'
+              },
+              transition: 'all 0.3s ease',
+              fontWeight: 600,
+              px: 3
+            }}
           >
             Create Group
           </Button>

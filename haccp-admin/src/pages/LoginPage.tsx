@@ -17,7 +17,11 @@ import {
   InputAdornment,
   Divider,
   Stack,
-  Chip
+  Chip,
+  Card,
+  CardContent,
+  Fade,
+  CircularProgress
 } from '@mui/material';
 import {
   Visibility,
@@ -77,43 +81,119 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
       background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
       display: 'flex',
       alignItems: 'center',
-      py: 4
+      py: 4,
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <Container maxWidth="sm">
-        {/* Back to Home Button */}
-        <Box sx={{ mb: 3, textAlign: 'left' }}>
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={() => navigate('/')}
-            sx={{ color: '#1976d2', fontWeight: 600 }}
-          >
-            Back to Home
-          </Button>
-        </Box>
-
-        {/* Header */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-            <Security sx={{ fontSize: 48, color: '#1976d2' }} />
+      {/* Background Pattern */}
+      <Box sx={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: `
+          radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, rgba(118, 75, 162, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 40% 80%, rgba(102, 126, 234, 0.05) 0%, transparent 50%)
+        `,
+        zIndex: 0
+      }} />
+      
+      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
+        {/* Modern Back to Home Button */}
+        <Fade in timeout={600}>
+          <Box sx={{ mb: 3, textAlign: 'left' }}>
+            <Button
+              startIcon={<ArrowBack />}
+              onClick={() => navigate('/')}
+              sx={{ 
+                background: 'rgba(255, 255, 255, 0.9)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: 3,
+                border: '1px solid rgba(102, 126, 234, 0.2)',
+                color: '#667eea',
+                fontWeight: 600,
+                px: 3,
+                py: 1,
+                '&:hover': {
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 8px 32px rgba(102, 126, 234, 0.2)',
+                },
+                transition: 'all 0.3s ease',
+              }}
+            >
+              Back to Home
+            </Button>
           </Box>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2', mb: 1 }}>
-            HACCP Admin
-          </Typography>
-          <Typography variant="h6" sx={{ color: '#666', fontWeight: 400 }}>
-            {isRegister ? 'Create Your Account' : 'Welcome Back'}
-          </Typography>
-        </Box>
+        </Fade>
 
-        {/* Login/Register Form */}
-        <Paper 
-          elevation={8} 
-          sx={{ 
-            p: 4, 
+        {/* Modern Header */}
+        <Fade in timeout={800}>
+          <Card sx={{ 
+            mb: 4, 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
             borderRadius: 3,
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)'
-          }}
-        >
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <Box sx={{ 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              p: 4,
+              textAlign: 'center'
+            }}>
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                mb: 2,
+                '& .MuiSvgIcon-root': {
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))'
+                }
+              }}>
+                <Security sx={{ 
+                  fontSize: 64, 
+                  color: 'white',
+                  animation: 'pulse 2s infinite',
+                  '@keyframes pulse': {
+                    '0%': { transform: 'scale(1)' },
+                    '50%': { transform: 'scale(1.05)' },
+                    '100%': { transform: 'scale(1)' }
+                  }
+                }} />
+              </Box>
+              <Typography variant="h3" sx={{ 
+                fontWeight: 700, 
+                color: 'white',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                mb: 1
+              }}>
+                HACCP Admin
+              </Typography>
+              <Typography variant="h6" sx={{ 
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontWeight: 400,
+                textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+              }}>
+                {isRegister ? 'Create Your Account' : 'Welcome Back'}
+              </Typography>
+            </Box>
+          </Card>
+        </Fade>
+
+        {/* Modern Login/Register Form */}
+        <Fade in timeout={1000}>
+          <Card sx={{ 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <CardContent sx={{ p: 4 }}>
           <form onSubmit={handleSubmit}>
             <Stack spacing={3}>
               {isRegister && (
@@ -124,10 +204,23 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
                   value={name}
                   onChange={e => setName(e.target.value)}
                   required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: 'rgba(102, 126, 234, 0.3)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(102, 126, 234, 0.5)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#667eea',
+                      }
+                    }
+                  }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <RegisterIcon sx={{ color: '#1976d2' }} />
+                        <RegisterIcon sx={{ color: '#667eea' }} />
                       </InputAdornment>
                     ),
                   }}
@@ -142,10 +235,23 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: 'rgba(102, 126, 234, 0.3)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(102, 126, 234, 0.5)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#667eea',
+                    }
+                  }
+                }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <LoginIcon sx={{ color: '#1976d2' }} />
+                      <LoginIcon sx={{ color: '#667eea' }} />
                     </InputAdornment>
                   ),
                 }}
@@ -159,10 +265,23 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: 'rgba(102, 126, 234, 0.3)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(102, 126, 234, 0.5)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#667eea',
+                    }
+                  }
+                }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Security sx={{ color: '#1976d2' }} />
+                      <Security sx={{ color: '#667eea' }} />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -170,6 +289,12 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
                       <IconButton
                         onClick={handleTogglePasswordVisibility}
                         edge="end"
+                        sx={{
+                          color: '#667eea',
+                          '&:hover': {
+                            background: 'rgba(102, 126, 234, 0.1)',
+                          }
+                        }}
                       >
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -179,7 +304,17 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
               />
 
               {error && (
-                <Alert severity="error" sx={{ borderRadius: 2 }}>
+                <Alert 
+                  severity="error" 
+                  sx={{ 
+                    borderRadius: 3,
+                    background: 'rgba(244, 67, 54, 0.1)',
+                    border: '1px solid rgba(244, 67, 54, 0.2)',
+                    '& .MuiAlert-icon': {
+                      color: '#f44336'
+                    }
+                  }}
+                >
                   {error}
                 </Alert>
               )}
@@ -191,26 +326,45 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
                 size="large"
                 disabled={loading}
                 sx={{
-                  py: 1.5,
+                  py: 2,
                   fontSize: '1.1rem',
                   fontWeight: 600,
-                  borderRadius: 2,
-                  background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+                  borderRadius: 3,
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)',
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
+                    background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
                     transform: 'translateY(-2px)',
-                    boxShadow: 4
+                    boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)',
                   },
                   '&:disabled': {
-                    background: '#ccc'
-                  }
+                    background: 'linear-gradient(135deg, #ccc 0%, #999 100%)',
+                    transform: 'none',
+                    boxShadow: 'none'
+                  },
+                  transition: 'all 0.3s ease'
                 }}
               >
-                {loading ? 'Processing...' : (isRegister ? 'Create Account' : 'Sign In')}
+                {loading ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CircularProgress size={20} sx={{ color: 'white' }} />
+                    Processing...
+                  </Box>
+                ) : (
+                  isRegister ? 'Create Account' : 'Sign In'
+                )}
               </Button>
 
               <Divider sx={{ my: 2 }}>
-                <Chip label="or" />
+                <Chip 
+                  label="or" 
+                  sx={{
+                    background: 'rgba(102, 126, 234, 0.1)',
+                    color: '#667eea',
+                    fontWeight: 600,
+                    border: '1px solid rgba(102, 126, 234, 0.2)'
+                  }}
+                />
               </Divider>
 
               <Button
@@ -219,30 +373,54 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
                 size="large"
                 onClick={() => setIsRegister(r => !r)}
                 sx={{
-                  py: 1.5,
+                  py: 2,
                   fontSize: '1rem',
                   fontWeight: 600,
-                  borderRadius: 2,
-                  borderColor: '#1976d2',
-                  color: '#1976d2',
+                  borderRadius: 3,
+                  borderColor: '#667eea',
+                  color: '#667eea',
+                  background: 'rgba(102, 126, 234, 0.05)',
                   '&:hover': {
-                    borderColor: '#1565c0',
-                    background: 'rgba(25, 118, 210, 0.04)'
-                  }
+                    borderColor: '#5a6fd8',
+                    background: 'rgba(102, 126, 234, 0.1)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)',
+                  },
+                  transition: 'all 0.3s ease'
                 }}
               >
                 {isRegister ? 'Already have an account? Sign In' : 'No account? Create One'}
               </Button>
             </Stack>
           </form>
-        </Paper>
+            </CardContent>
+          </Card>
+        </Fade>
 
-        {/* Footer Info */}
-        <Box sx={{ textAlign: 'center', mt: 4 }}>
-          <Typography variant="body2" sx={{ color: '#666' }}>
-            Secure • Reliable • Compliant
-          </Typography>
-        </Box>
+        {/* Modern Footer Info */}
+        <Fade in timeout={1200}>
+          <Box sx={{ 
+            textAlign: 'center', 
+            mt: 4,
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+            p: 2
+          }}>
+            <Typography variant="body1" sx={{ 
+              color: '#667eea',
+              fontWeight: 600,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              Secure • Reliable • Compliant
+            </Typography>
+          </Box>
+        </Fade>
       </Container>
     </Box>
   );

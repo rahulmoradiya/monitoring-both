@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton, Paper, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, InputLabel, FormControl, Chip, Checkbox, Avatar
+  Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton, Paper, Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Select, MenuItem, InputLabel, FormControl, Chip, Checkbox, Avatar, Card, CardContent, CardHeader, Fade, Stack, Tooltip
 } from '@mui/material';
-import { Add, Edit, Delete, CloudUpload, Download, Search } from '@mui/icons-material';
+import { Add, Edit, Delete, CloudUpload, Download, Search, Description, FolderOpen, Business, Settings } from '@mui/icons-material';
 import { db, storage, auth } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, setDoc, collectionGroup } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -50,20 +50,29 @@ export default function SOP() {
   useEffect(() => {
     // Fetch companyCode, roles, users
     const fetchMeta = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        const usersSnap = await getDocs(collectionGroup(db, 'users'));
-        const userDoc = usersSnap.docs.find(doc => doc.data().uid === user.uid);
-        if (userDoc) {
-          const userData = userDoc.data();
-          setCompanyCode(userData.companyCode);
-          // Fetch roles
-          const rolesSnap = await getDocs(collection(db, 'companies', userData.companyCode, 'roles'));
-          setRoles(rolesSnap.docs.map(doc => doc.data().name));
-          // Fetch users
-          const companyUsers = usersSnap.docs.filter(doc => doc.data().companyCode === userData.companyCode);
-          setUsers(companyUsers.map(doc => ({ uid: doc.data().uid, name: doc.data().name || doc.data().email })));
+      try {
+        const user = auth.currentUser;
+        console.log('Current user:', user);
+        if (user) {
+          const usersSnap = await getDocs(collectionGroup(db, 'users'));
+          console.log('Users found:', usersSnap.docs.length);
+          const userDoc = usersSnap.docs.find(doc => doc.data().uid === user.uid);
+          console.log('User doc found:', userDoc);
+          if (userDoc) {
+            const userData = userDoc.data();
+            console.log('User data:', userData);
+            setCompanyCode(userData.companyCode);
+            console.log('Company code set:', userData.companyCode);
+            // Fetch roles
+            const rolesSnap = await getDocs(collection(db, 'companies', userData.companyCode, 'roles'));
+            setRoles(rolesSnap.docs.map(doc => doc.data().name));
+            // Fetch users
+            const companyUsers = usersSnap.docs.filter(doc => doc.data().companyCode === userData.companyCode);
+            setUsers(companyUsers.map(doc => ({ uid: doc.data().uid, name: doc.data().name || doc.data().email })));
+          }
         }
+      } catch (error) {
+        console.error('Error fetching meta data:', error);
       }
     };
     fetchMeta();
@@ -89,10 +98,12 @@ export default function SOP() {
   }, [companyCode]);
 
   const handleOpenDialog = (sop?: SOP) => {
+    console.log('Opening dialog with SOP:', sop);
     setEditMode(!!sop);
     setCurrentSOP(sop ? { ...sop } : { assignedRoles: [], assignedUsers: [], version: '' });
     setFile(null);
     setDialogOpen(true);
+    console.log('Dialog should be open now');
   };
   const handleCloseDialog = () => {
     setDialogOpen(false);
@@ -110,66 +121,89 @@ export default function SOP() {
     setSnackbarOpen(false);
   };
   const handleSave = async () => {
-    if (!companyCode || !currentSOP.title) return;
+    console.log('HandleSave called with:', { companyCode, currentSOP });
+    if (!companyCode || !currentSOP.title) {
+      console.log('Missing required data:', { companyCode, title: currentSOP.title });
+      setSnackbarMsg('Missing required data. Please check your connection.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      setUploading(false);
+      return;
+    }
     setUploading(true);
+    
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.log('Save operation timed out');
+      setSnackbarMsg('Save operation timed out. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      setUploading(false);
+    }, 30000); // 30 second timeout
+    
     let fileUrl = currentSOP.fileUrl;
     let fileName = currentSOP.fileName;
     try {
+      console.log('Starting file upload...');
       if (file) {
-        // Upload file to storage
-        const storageRef = ref(storage, `companies/${companyCode}/sops/${file.name}`);
-        await uploadBytes(storageRef, file);
-        fileUrl = await getDownloadURL(storageRef);
-        fileName = file.name;
+        try {
+          // Upload file to storage
+          const storageRef = ref(storage, `companies/${companyCode}/sops/${file.name}`);
+          console.log('Uploading to storage ref:', storageRef);
+          await uploadBytes(storageRef, file);
+          fileUrl = await getDownloadURL(storageRef);
+          fileName = file.name;
+          console.log('File uploaded successfully:', { fileUrl, fileName });
+        } catch (uploadErr) {
+          console.error('File upload failed, proceeding without file:', uploadErr);
+          // Let save proceed without a file to avoid blocking
+          setSnackbarMsg('File upload failed (CORS/permissions). Saved SOP without file.');
+          setSnackbarSeverity('warning');
+          setSnackbarOpen(true);
+        }
       }
+      
       const sopData = {
-        ...currentSOP,
+        title: currentSOP.title || '',
         version: currentSOP.version || '',
-        fileUrl,
-        fileName,
+        description: currentSOP.description || '',
+        department: currentSOP.department || '',
+        fileUrl: fileUrl || '',
+        fileName: fileName || '',
         assignedRoles: currentSOP.assignedRoles || [],
         assignedUsers: currentSOP.assignedUsers || [],
         createdAt: currentSOP.createdAt || new Date(),
-        department: currentSOP.department || '',
       };
+      
+      console.log('SOP data to save:', sopData);
+      
       if (editMode && currentSOP.id) {
+        console.log('Updating existing SOP...');
         // Find the original SOP
         const originalSOP = sops.find(s => s.id === currentSOP.id);
         if (originalSOP && originalSOP.version !== currentSOP.version) {
           // Version changed: create a new SOP document
-          const docRef = await addDoc(collection(db, 'companies', companyCode, 'sops'), {
-            ...sopData,
-            title: currentSOP.title || '',
-            description: currentSOP.description || '',
-          });
+          const docRef = await addDoc(collection(db, 'companies', companyCode, 'sops'), sopData);
+          console.log('New SOP version created with ID:', docRef.id);
           setSOPs(prev => [
             ...prev,
-            { ...sopData, id: docRef.id, title: currentSOP.title || '', description: currentSOP.description || '' }
+            { ...sopData, id: docRef.id }
           ]);
           setSnackbarMsg('New SOP version added successfully!');
         } else {
           // Version unchanged: update existing SOP
           await updateDoc(doc(db, 'companies', companyCode, 'sops', currentSOP.id), sopData);
+          console.log('SOP updated successfully');
           setSOPs(prev => prev.map(s => s.id === currentSOP.id ? { ...s, ...sopData } as SOP : s));
           setSnackbarMsg('SOP updated successfully!');
         }
       } else {
-        const newSop: SOP = {
-          id: '',
-          title: currentSOP.title || '',
-          version: currentSOP.version || '',
-          description: currentSOP.description || '',
-          department: currentSOP.department || '',
-          fileUrl: fileUrl || '',
-          fileName: fileName || '',
-          assignedRoles: currentSOP.assignedRoles || [],
-          assignedUsers: currentSOP.assignedUsers || [],
-          createdAt: currentSOP.createdAt || new Date(),
-        };
-        const docRef = await addDoc(collection(db, 'companies', companyCode, 'sops'), newSop);
+        console.log('Creating new SOP...');
+        const docRef = await addDoc(collection(db, 'companies', companyCode, 'sops'), sopData);
+        console.log('New SOP created with ID:', docRef.id);
         setSOPs(prev => [
           ...prev,
-          { ...newSop, id: docRef.id }
+          { ...sopData, id: docRef.id }
         ]);
         setSnackbarMsg('SOP added successfully!');
       }
@@ -177,10 +211,13 @@ export default function SOP() {
       setSnackbarOpen(true);
       handleCloseDialog();
     } catch (err) {
-      setSnackbarMsg('Failed to save SOP.');
+      console.error('Error saving SOP:', err);
+      const message = err instanceof Error ? err.message : String(err);
+      setSnackbarMsg(`Failed to save SOP: ${message}`);
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     } finally {
+      clearTimeout(timeoutId);
       setUploading(false);
     }
   };
@@ -189,20 +226,30 @@ export default function SOP() {
     setDeleteDialogOpen(true);
   };
   const handleConfirmDelete = async () => {
-    if (!sopToDelete || !companyCode) return;
+    if (!sopToDelete || !companyCode) {
+      console.log('Missing data for delete:', { sopToDelete, companyCode });
+      setSnackbarMsg('Missing data for delete operation.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
     setDeleteDialogOpen(false);
     try {
+      console.log('Deleting SOP:', sopToDelete.id);
       await deleteDoc(doc(db, 'companies', companyCode, 'sops', sopToDelete.id));
       setSOPs(prev => prev.filter(s => s.id !== sopToDelete.id));
       if (sopToDelete.fileUrl) {
         const fileRef = ref(storage, sopToDelete.fileUrl);
         await deleteObject(fileRef);
+        console.log('File deleted from storage');
       }
       setSnackbarMsg('SOP deleted successfully!');
       setSnackbarSeverity('success');
       setSnackbarOpen(true);
     } catch (err) {
-      setSnackbarMsg('Failed to delete SOP.');
+      console.error('Error deleting SOP:', err);
+      const message = err instanceof Error ? err.message : String(err);
+      setSnackbarMsg(`Failed to delete SOP: ${message}`);
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     } finally {
@@ -223,125 +270,649 @@ export default function SOP() {
   );
 
   return (
-    <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700 }}>Standard Operating Procedures (SOPs)</Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button variant="outlined" onClick={() => window.location.href='/admin/teams'}>
-            Manage Departments
-          </Button>
-          <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenDialog()}>
-            Add SOP
-          </Button>
-        </Box>
-      </Box>
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-          <FormControl sx={{ minWidth: 160 }}>
-            <InputLabel>Department</InputLabel>
-            <Select value={filterDepartment} label="Department" onChange={e => setFilterDepartment(e.target.value)}>
-              <MenuItem value=""><em>All</em></MenuItem>
-              {departments.map(dept => <MenuItem key={dept.id} value={dept.name}>{dept.name}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <FormControl sx={{ minWidth: 160 }}>
-            <InputLabel>Version</InputLabel>
-            <Select value={filterVersion} label="Version" onChange={e => setFilterVersion(e.target.value)}>
-              <MenuItem value=""><em>All</em></MenuItem>
-              {uniqueVersions.map(version => <MenuItem key={version} value={version}>{version}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <TextField
-            size="small"
-            placeholder="Search SOPs..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            InputProps={{ startAdornment: <Search sx={{ mr: 1 }} /> }}
-            sx={{ minWidth: 260 }}
+    <Box sx={{ 
+      p: 3, 
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      minHeight: '100vh',
+      position: 'relative'
+    }}>
+      {/* Modern Header with Glass Morphism */}
+      <Fade in timeout={600}>
+        <Card sx={{ 
+          mb: 4, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <Box sx={{ 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            p: 3,
+            textAlign: 'center'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+              <Description sx={{ 
+                fontSize: 48, 
+                color: 'white', 
+                mr: 2,
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+              }} />
+              <Typography variant="h3" component="h1" sx={{ 
+                fontWeight: 700, 
+                color: 'white',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}>
+                Files & SOPs
+              </Typography>
+            </Box>
+            <Typography variant="h6" sx={{ 
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontWeight: 400,
+              textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+            }}>
+              Manage your Standard Operating Procedures and documentation
+            </Typography>
+          </Box>
+        </Card>
+      </Fade>
+
+      {/* Debug Info */}
+      <Fade in timeout={400}>
+        <Card sx={{ 
+          mb: 2, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 2,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <CardContent sx={{ p: 2 }}>
+            <Typography variant="body2" color="textSecondary">
+              Debug: Company Code: {companyCode || 'Not loaded'}, SOPs: {sops.length}, Dialog Open: {dialogOpen.toString()}
+            </Typography>
+          </CardContent>
+        </Card>
+      </Fade>
+
+      {/* Modern Action Buttons */}
+      <Fade in timeout={800}>
+        <Card sx={{ 
+          mb: 4, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <FolderOpen sx={{ color: '#667eea', fontSize: 28 }} />
+                <Typography variant="h5" sx={{ 
+                  fontWeight: 600, 
+                  color: '#2c3e50',
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  Standard Operating Procedures (SOPs)
+                </Typography>
+                <Chip 
+                  label={`${filteredSOPs.length} ${filteredSOPs.length === 1 ? 'SOP' : 'SOPs'}`}
+                  sx={{ 
+                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.8rem'
+                  }}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                {/* <Button 
+                  variant="outlined" 
+                  startIcon={<Business />}
+                  onClick={() => window.location.href='/admin/teams'}
+                  sx={{
+                    borderColor: '#2196F3',
+                    color: '#2196F3',
+                    '&:hover': {
+                      borderColor: '#1976D2',
+                      background: 'rgba(33, 150, 243, 0.1)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)'
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Manage Departments
+                </Button> */}
+                <Button 
+                  variant="contained" 
+                  startIcon={<Add />} 
+                  onClick={() => handleOpenDialog()}
+                  sx={{
+                    background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                    '&:hover': {
+                      background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)'
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Add SOP
+                </Button>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Fade>
+      {/* Modern Filter Section */}
+      <Fade in timeout={1000}>
+        <Card sx={{ 
+          mb: 4, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <CardHeader 
+            title={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Settings sx={{ color: '#667eea' }} />
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 600,
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  Filters & Search
+                </Typography>
+              </Box>
+            }
+            sx={{ 
+              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+              borderBottom: '1px solid rgba(102, 126, 234, 0.1)'
+            }}
           />
-        </Box>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Title</TableCell>
-              <TableCell>Version</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>File</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredSOPs.map(sop => (
-              <TableRow key={sop.id}>
-                <TableCell>{sop.title}</TableCell>
-                <TableCell>{sop.version}</TableCell>
-                <TableCell>{sop.description}</TableCell>
-                <TableCell>
-                  {sop.fileUrl && (
-                    <IconButton href={sop.fileUrl} target="_blank" rel="noopener" download={sop.fileName}>
-                      <Download />
-                    </IconButton>
-                  )}
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton onClick={() => handleOpenDialog(sop)}><Edit /></IconButton>
-                  <IconButton onClick={() => handleDeleteClick(sop.id, sop.fileUrl)} color="error"><Delete /></IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Paper>
-      {/* Add/Edit SOP Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{editMode ? 'Edit SOP' : 'Add SOP'}</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField
-            label="Title"
-            value={currentSOP.title || ''}
-            onChange={e => setCurrentSOP(s => ({ ...s, title: e.target.value }))}
-            fullWidth
-            required
-          />
-          <TextField
-            label="Version"
-            value={currentSOP.version || ''}
-            onChange={e => setCurrentSOP(s => ({ ...s, version: e.target.value }))}
-            fullWidth
-            required
-          />
-          <TextField
-            label="Description"
-            value={currentSOP.description || ''}
-            onChange={e => setCurrentSOP(s => ({ ...s, description: e.target.value }))}
-            fullWidth
-            multiline
-            minRows={2}
-          />
-          <Button
-            component="label"
-            variant="outlined"
-            startIcon={<CloudUpload />}
-            disabled={uploading}
-          >
-            {file ? file.name : currentSOP.fileName || 'Upload File'}
-            <input type="file" hidden onChange={handleFileChange} />
-          </Button>
+          <CardContent sx={{ p: 3 }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+              <FormControl sx={{ minWidth: 180 }}>
+                <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Department</InputLabel>
+                <Select 
+                  value={filterDepartment} 
+                  label="Department" 
+                  onChange={e => setFilterDepartment(e.target.value)}
+                  sx={{
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(102, 126, 234, 0.3)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(102, 126, 234, 0.5)',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#667eea',
+                    }
+                  }}
+                >
+                  <MenuItem value=""><em>All Departments</em></MenuItem>
+                  {departments.map(dept => <MenuItem key={dept.id} value={dept.name}>{dept.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <FormControl sx={{ minWidth: 180 }}>
+                <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Version</InputLabel>
+                <Select 
+                  value={filterVersion} 
+                  label="Version" 
+                  onChange={e => setFilterVersion(e.target.value)}
+                  sx={{
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(102, 126, 234, 0.3)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(102, 126, 234, 0.5)',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#667eea',
+                    }
+                  }}
+                >
+                  <MenuItem value=""><em>All Versions</em></MenuItem>
+                  {uniqueVersions.map(version => <MenuItem key={version} value={version}>{version}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <TextField
+                size="medium"
+                placeholder="Search SOPs..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                InputProps={{ 
+                  startAdornment: <Search sx={{ mr: 1, color: '#667eea' }} /> 
+                }}
+                sx={{ 
+                  minWidth: 300,
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: 'rgba(102, 126, 234, 0.3)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(102, 126, 234, 0.5)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#667eea',
+                    }
+                  }
+                }}
+              />
+            </Stack>
+          </CardContent>
+        </Card>
+      </Fade>
+
+      {/* Modern SOPs Table */}
+      <Fade in timeout={1200}>
+        <Card sx={{ 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ 
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  '& .MuiTableCell-head': {
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.95rem',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                  }
+                }}>
+                  <TableCell>Title</TableCell>
+                  <TableCell>Version</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell>File</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredSOPs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Description sx={{ fontSize: 64, color: '#ccc', mb: 2 }} />
+                        <Typography variant="h6" color="textSecondary" sx={{ mb: 1 }}>
+                          No SOPs Found
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          {search || filterDepartment || filterVersion 
+                            ? 'Try adjusting your filters or search terms'
+                            : 'Get started by adding your first SOP'
+                          }
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredSOPs.map((sop, index) => (
+                    <TableRow 
+                      key={sop.id}
+                      sx={{ 
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.02))',
+                          transform: 'translateY(-1px)',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                        },
+                        transition: 'all 0.3s ease',
+                        '&:nth-of-type(even)': {
+                          background: 'rgba(102, 126, 234, 0.02)'
+                        }
+                      }}
+                    >
+                      <TableCell>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                          {sop.title}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={sop.version || 'N/A'} 
+                          size="small"
+                          sx={{ 
+                            background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                            color: 'white',
+                            fontWeight: 600
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography 
+                          variant="body2" 
+                          color="textSecondary"
+                          sx={{ 
+                            maxWidth: 200, 
+                            overflow: 'hidden', 
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {sop.description || 'No description'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {sop.fileUrl ? (
+                          <Tooltip title="Download file">
+                            <IconButton 
+                              href={sop.fileUrl} 
+                              target="_blank" 
+                              rel="noopener" 
+                              download={sop.fileName}
+                              sx={{
+                                color: '#4CAF50',
+                                '&:hover': {
+                                  background: 'rgba(76, 175, 80, 0.1)',
+                                  transform: 'scale(1.1)'
+                                },
+                                transition: 'all 0.3s ease'
+                              }}
+                            >
+                              <Download />
+                            </IconButton>
+                          </Tooltip>
+                        ) : (
+                          <Typography variant="body2" color="textSecondary">
+                            No file
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                          <Tooltip title="Edit SOP">
+                            <IconButton 
+                              onClick={() => handleOpenDialog(sop)}
+                              sx={{
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                color: 'white',
+                                borderRadius: 2,
+                                width: 40,
+                                height: 40,
+                                boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)',
+                                '&:hover': {
+                                  background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                                  transform: 'translateY(-2px) scale(1.05)',
+                                  boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)'
+                                },
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '& .MuiSvgIcon-root': {
+                                  fontSize: '1.2rem'
+                                }
+                              }}
+                            >
+                              <Edit />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete SOP">
+                            <IconButton 
+                              onClick={() => handleDeleteClick(sop.id, sop.fileUrl)} 
+                              sx={{
+                                background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+                                color: 'white',
+                                borderRadius: 2,
+                                width: 40,
+                                height: 40,
+                                boxShadow: '0 4px 16px rgba(244, 67, 54, 0.3)',
+                                '&:hover': {
+                                  background: 'linear-gradient(135deg, #d32f2f 0%, #c62828 100%)',
+                                  transform: 'translateY(-2px) scale(1.05)',
+                                  boxShadow: '0 8px 24px rgba(244, 67, 54, 0.4)'
+                                },
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '& .MuiSvgIcon-root': {
+                                  fontSize: '1.2rem'
+                                }
+                              }}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
+      </Fade>
+      {/* Modern Add/Edit SOP Dialog */}
+      <Dialog 
+        open={dialogOpen} 
+        onClose={handleCloseDialog} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          textAlign: 'center',
+          fontWeight: 600,
+          textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+        }}>
+          {editMode ? 'Edit SOP' : 'Add New SOP'}
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={3}>
+            <TextField
+              label="Title"
+              value={currentSOP.title || ''}
+              onChange={e => setCurrentSOP(s => ({ ...s, title: e.target.value }))}
+              fullWidth
+              required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: 'rgba(102, 126, 234, 0.3)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(102, 126, 234, 0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#667eea',
+                  }
+                }
+              }}
+            />
+            <TextField
+              label="Version"
+              value={currentSOP.version || ''}
+              onChange={e => setCurrentSOP(s => ({ ...s, version: e.target.value }))}
+              fullWidth
+              required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: 'rgba(102, 126, 234, 0.3)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(102, 126, 234, 0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#667eea',
+                  }
+                }
+              }}
+            />
+            <TextField
+              label="Description"
+              value={currentSOP.description || ''}
+              onChange={e => setCurrentSOP(s => ({ ...s, description: e.target.value }))}
+              fullWidth
+              multiline
+              minRows={3}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: 'rgba(102, 126, 234, 0.3)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(102, 126, 234, 0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#667eea',
+                  }
+                }
+              }}
+            />
+            <Box sx={{ 
+              border: '2px dashed rgba(102, 126, 234, 0.3)',
+              borderRadius: 2,
+              p: 2,
+              textAlign: 'center',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                borderColor: 'rgba(102, 126, 234, 0.5)',
+                background: 'rgba(102, 126, 234, 0.05)'
+              }
+            }}>
+              <Button
+                component="label"
+                variant="outlined"
+                startIcon={<CloudUpload />}
+                disabled={uploading}
+                sx={{
+                  borderColor: '#667eea',
+                  color: '#667eea',
+                  '&:hover': {
+                    borderColor: '#5a6fd8',
+                    background: 'rgba(102, 126, 234, 0.1)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                  },
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                {file ? file.name : currentSOP.fileName || 'Upload File'}
+                <input type="file" hidden onChange={handleFileChange} />
+              </Button>
+              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                Click to select a file or drag and drop
+              </Typography>
+            </Box>
+          </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} disabled={uploading}>Cancel</Button>
-          <Button onClick={handleSave} variant="contained" disabled={uploading || !currentSOP.title}>{uploading ? 'Saving...' : (editMode ? 'Save' : 'Add')}</Button>
+        <DialogActions sx={{ p: 3, gap: 2 }}>
+          <Button 
+            onClick={handleCloseDialog} 
+            disabled={uploading}
+            sx={{
+              color: '#666',
+              '&:hover': {
+                background: 'rgba(0, 0, 0, 0.05)'
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSave} 
+            variant="contained" 
+            disabled={uploading || !currentSOP.title}
+            sx={{
+              background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)'
+              },
+              transition: 'all 0.3s ease'
+            }}
+          >
+            {uploading ? 'Saving...' : (editMode ? 'Save Changes' : 'Add SOP')}
+          </Button>
         </DialogActions>
       </Dialog>
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>
-        <DialogTitle>Delete SOP</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure you want to delete this SOP? This action cannot be undone.</Typography>
+      {/* Modern Delete Confirmation Dialog */}
+      <Dialog 
+        open={deleteDialogOpen} 
+        onClose={handleCancelDelete}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+          color: 'white',
+          textAlign: 'center',
+          fontWeight: 600,
+          textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+        }}>
+          Delete SOP
+        </DialogTitle>
+        <DialogContent sx={{ p: 3, textAlign: 'center' }}>
+          <Box sx={{ mb: 2 }}>
+            <Delete sx={{ fontSize: 48, color: '#f44336', mb: 2 }} />
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#2c3e50', mb: 1 }}>
+              Are you sure you want to delete this SOP?
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              This action cannot be undone and will permanently remove the SOP and its associated file.
+            </Typography>
+          </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelDelete}>Cancel</Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained">Delete</Button>
+        <DialogActions sx={{ p: 3, gap: 2, justifyContent: 'center' }}>
+          <Button 
+            onClick={handleCancelDelete}
+            sx={{
+              color: '#666',
+              '&:hover': {
+                background: 'rgba(0, 0, 0, 0.05)'
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleConfirmDelete} 
+            variant="contained"
+            sx={{
+              background: 'linear-gradient(45deg, #f44336, #d32f2f)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #d32f2f, #c62828)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 20px rgba(244, 67, 54, 0.4)'
+              },
+              transition: 'all 0.3s ease'
+            }}
+          >
+            Delete SOP
+          </Button>
         </DialogActions>
       </Dialog>
       {/* Snackbar for success/error */}

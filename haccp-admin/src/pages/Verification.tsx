@@ -4,6 +4,7 @@ import { db, auth } from '../firebase';
 import { 
   Card, 
   CardContent, 
+  CardHeader,
   Typography, 
   Box, 
   CircularProgress,
@@ -30,7 +31,9 @@ import {
   ListItemIcon,
   Avatar,
   Tooltip,
-  TextField
+  TextField,
+  Fade,
+  Stack
 } from '@mui/material';
 import { 
   Checklist, 
@@ -44,7 +47,9 @@ import {
   CheckCircleOutline,
   CancelOutlined,
   Warning,
-  CalendarToday
+  CalendarToday,
+  Assessment,
+  DashboardCustomize
 } from '@mui/icons-material';
 
 interface UserProfile {
@@ -933,8 +938,36 @@ export default function Verification() {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="80vh">
-        <CircularProgress />
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '80vh',
+        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+        minHeight: '100vh'
+      }}>
+        <Fade in timeout={600}>
+          <Card sx={{ 
+            p: 4, 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            textAlign: 'center'
+          }}>
+            <CircularProgress size={60} sx={{ color: '#667eea', mb: 2 }} />
+            <Typography variant="h6" sx={{ 
+              background: 'linear-gradient(45deg, #667eea, #764ba2)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontWeight: 600
+            }}>
+              Loading Verification Data...
+            </Typography>
+          </Card>
+        </Fade>
       </Box>
     );
   }
@@ -944,468 +977,1085 @@ export default function Verification() {
 
   if (hasNoDataForDate) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
-          Verification Dashboard
-        </Typography>
-
-        {/* Date Selector */}
-        <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-          <Box display="flex" alignItems="center" sx={{ mr: 2 }}>
-            <CalendarToday sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6" sx={{ fontWeight: 500 }}>
-              Select Date:
-            </Typography>
-          </Box>
-          <TextField
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': {
-                  borderColor: 'primary.main',
-                },
-                '&:hover fieldset': {
-                  borderColor: 'primary.dark',
-                },
-              },
-            }}
-            InputProps={{
-              sx: {
-                fontWeight: 500,
-                fontSize: '1rem',
-              }
-            }}
-          />
-          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-            Viewing tasks completed on {new Date(selectedDate).toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
-          </Typography>
-        </Box>
-
-        {/* No Data Message */}
-        <Paper sx={{ p: 6, textAlign: 'center', bgcolor: 'grey.50' }}>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h3" sx={{ color: 'text.secondary', mb: 2 }}>
-              🔍
-            </Typography>
-            <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 600, mb: 2 }}>
-              No Tasks Completed Yet
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              There are no completed tasks for {new Date(selectedDate).toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}. The verification dashboard will show completed tasks once team members start completing their monitoring assignments.
-            </Typography>
-          </Box>
-          
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
-              What you'll see here:
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                • Completed checklist and detailed monitoring tasks
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                • Personal task completions
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                • Verification status and data review
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                • Task completion statistics and trends
+      <Box sx={{ 
+        p: 3, 
+        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+        minHeight: '100vh',
+        position: 'relative'
+      }}>
+        {/* Modern Header */}
+        <Fade in timeout={600}>
+          <Card sx={{ 
+            mb: 4, 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <Box sx={{ 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              p: 3,
+              textAlign: 'center'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                <Assessment sx={{ 
+                  fontSize: 48, 
+                  color: 'white', 
+                  mr: 2,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                }} />
+                <Typography variant="h3" component="h1" sx={{ 
+                  fontWeight: 700, 
+                  color: 'white',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                }}>
+                  Verification Dashboard
+                </Typography>
+              </Box>
+              <Typography variant="h6" sx={{ 
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontWeight: 400,
+                textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+              }}>
+                Monitor and verify completed tasks and data collection
               </Typography>
             </Box>
-          </Box>
-        </Paper>
+          </Card>
+        </Fade>
+
+        {/* Modern Date Selector */}
+        <Fade in timeout={800}>
+          <Card sx={{ 
+            mb: 4, 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <CardHeader 
+              title={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CalendarToday sx={{ color: '#667eea' }} />
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600,
+                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}>
+                    Date Selection
+                  </Typography>
+                </Box>
+              }
+              sx={{ 
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+                borderBottom: '1px solid rgba(102, 126, 234, 0.1)'
+              }}
+            />
+            <CardContent sx={{ p: 3 }}>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+                <TextField
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: 'rgba(102, 126, 234, 0.3)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(102, 126, 234, 0.5)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#667eea',
+                      }
+                    }
+                  }}
+                  InputProps={{
+                    sx: {
+                      fontWeight: 500,
+                      fontSize: '1rem',
+                    }
+                  }}
+                />
+                <Typography variant="body2" color="text.secondary" sx={{ 
+                  fontWeight: 500,
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  Viewing tasks completed on {new Date(selectedDate).toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Fade>
+
+        {/* Modern No Data Message */}
+        <Fade in timeout={1000}>
+          <Card sx={{ 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <CardContent sx={{ p: 6, textAlign: 'center' }}>
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h1" sx={{ 
+                  color: '#667eea', 
+                  mb: 3,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                }}>
+                  🔍
+                </Typography>
+                <Typography variant="h4" sx={{ 
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 700, 
+                  mb: 2 
+                }}>
+                  No Tasks Completed Yet
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 4, fontSize: '1.1rem' }}>
+                  There are no completed tasks for {new Date(selectedDate).toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}. The verification dashboard will show completed tasks once team members start completing their monitoring assignments.
+                </Typography>
+              </Box>
+              
+              <Box sx={{ 
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+                borderRadius: 2,
+                p: 3,
+                border: '1px solid rgba(102, 126, 234, 0.2)'
+              }}>
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 600, 
+                  mb: 3,
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  What you'll see here:
+                </Typography>
+                <Stack spacing={1} alignItems="flex-start">
+                  <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                    <CheckCircle sx={{ mr: 1, color: '#667eea', fontSize: 20 }} />
+                    Completed checklist and detailed monitoring tasks
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Person sx={{ mr: 1, color: '#667eea', fontSize: 20 }} />
+                    Personal task completions
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Verified sx={{ mr: 1, color: '#667eea', fontSize: 20 }} />
+                    Verification status and data review
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                    <TrendingUp sx={{ mr: 1, color: '#667eea', fontSize: 20 }} />
+                    Task completion statistics and trends
+                  </Typography>
+                </Stack>
+              </Box>
+            </CardContent>
+          </Card>
+        </Fade>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
-        Verification Dashboard
-      </Typography>
+    <Box sx={{ 
+      p: 3, 
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      minHeight: '100vh',
+      position: 'relative'
+    }}>
+      {/* Modern Header */}
+      <Fade in timeout={600}>
+        <Card sx={{ 
+          mb: 4, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <Box sx={{ 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            p: 3,
+            textAlign: 'center'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+              <Assessment sx={{ 
+                fontSize: 48, 
+                color: 'white', 
+                mr: 2,
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+              }} />
+              <Typography variant="h3" component="h1" sx={{ 
+                fontWeight: 700, 
+                color: 'white',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}>
+                Verification Dashboard
+              </Typography>
+            </Box>
+            <Typography variant="h6" sx={{ 
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontWeight: 400,
+              textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+            }}>
+              Monitor and verify completed tasks and data collection
+            </Typography>
+          </Box>
+        </Card>
+      </Fade>
 
-      {/* Date Selector */}
-      <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-        <Box display="flex" alignItems="center" sx={{ mr: 2 }}>
-          <CalendarToday sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="h6" sx={{ fontWeight: 500 }}>
-            Select Date:
-          </Typography>
-        </Box>
-        <TextField
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              '& fieldset': {
-                borderColor: 'primary.main',
-              },
-              '&:hover fieldset': {
-                borderColor: 'primary.dark',
-              },
-            },
-          }}
-          InputProps={{
-            sx: {
-              fontWeight: 500,
-              fontSize: '1rem',
+      {/* Modern Date Selector */}
+      <Fade in timeout={800}>
+        <Card sx={{ 
+          mb: 4, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <CardHeader 
+            title={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CalendarToday sx={{ color: '#667eea' }} />
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 600,
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  Date Selection
+                </Typography>
+              </Box>
             }
-          }}
-        />
-        <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-          Viewing tasks completed on {new Date(selectedDate).toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
-        </Typography>
-      </Box>
-
-      {/* Summary Cards */}
-      <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
-        <Card sx={{ flex: '1 1 200px', minWidth: 200, bgcolor: 'primary.light', color: 'white' }}>
-          <CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Box>
-                <Typography variant="h4" component="div">
-                  {filteredTotalCompleted}
-                </Typography>
-                <Typography variant="body2">
-                  Total Completed
-                </Typography>
-              </Box>
-              <CheckCircle sx={{ fontSize: 40, opacity: 0.8 }} />
-            </Box>
+            sx={{ 
+              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+              borderBottom: '1px solid rgba(102, 126, 234, 0.1)'
+            }}
+          />
+          <CardContent sx={{ p: 3 }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+              <TextField
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: 'rgba(102, 126, 234, 0.3)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(102, 126, 234, 0.5)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#667eea',
+                    }
+                  }
+                }}
+                InputProps={{
+                  sx: {
+                    fontWeight: 500,
+                    fontSize: '1rem',
+                  }
+                }}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ 
+                fontWeight: 500,
+                background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
+                Viewing tasks completed on {new Date(selectedDate).toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </Typography>
+            </Stack>
           </CardContent>
         </Card>
+      </Fade>
 
-        <Card sx={{ flex: '1 1 200px', minWidth: 200, bgcolor: 'success.light', color: 'white' }}>
-          <CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Box>
-                <Typography variant="h4" component="div">
-                  {filteredChecklistCollected.length}
-                </Typography>
-                <Typography variant="body2">
-                  Checklist Tasks
+      {/* Modern Summary Cards */}
+      <Fade in timeout={1000}>
+        <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
+          <Card sx={{ 
+            flex: '1 1 200px', 
+            minWidth: 200, 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 12px 40px rgba(102, 126, 234, 0.4)',
+            },
+            transition: 'all 0.3s ease'
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h3" component="div" sx={{ fontWeight: 700, mb: 1 }}>
+                    {filteredTotalCompleted}
+                  </Typography>
+                  <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                    Total Completed
+                  </Typography>
+                </Box>
+                <CheckCircle sx={{ fontSize: 48, opacity: 0.8, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ 
+            flex: '1 1 200px', 
+            minWidth: 200, 
+            background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+            color: 'white',
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(76, 175, 80, 0.3)',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 12px 40px rgba(76, 175, 80, 0.4)',
+            },
+            transition: 'all 0.3s ease'
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h3" component="div" sx={{ fontWeight: 700, mb: 1 }}>
+                    {filteredChecklistCollected.length}
+                  </Typography>
+                  <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                    Checklist Tasks
+                  </Typography>
+                </Box>
+                <Checklist sx={{ fontSize: 48, opacity: 0.8, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ 
+            flex: '1 1 200px', 
+            minWidth: 200, 
+            background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+            color: 'white',
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(33, 150, 243, 0.3)',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 12px 40px rgba(33, 150, 243, 0.4)',
+            },
+            transition: 'all 0.3s ease'
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h3" component="div" sx={{ fontWeight: 700, mb: 1 }}>
+                    {filteredDetailedCollected.length}
+                  </Typography>
+                  <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                    Detailed Tasks
+                  </Typography>
+                </Box>
+                <Assignment sx={{ fontSize: 48, opacity: 0.8, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ 
+            flex: '1 1 200px', 
+            minWidth: 200, 
+            background: 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)',
+            color: 'white',
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(255, 152, 0, 0.3)',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 12px 40px rgba(255, 152, 0, 0.4)',
+            },
+            transition: 'all 0.3s ease'
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h3" component="div" sx={{ fontWeight: 700, mb: 1 }}>
+                    {filteredPersonalCollected.length}
+                  </Typography>
+                  <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                    Personal Tasks
+                  </Typography>
+                </Box>
+                <Person sx={{ fontSize: 48, opacity: 0.8, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+      </Fade>
+
+      {/* Modern Verification Status Cards */}
+      <Fade in timeout={1200}>
+        <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
+          <Card sx={{ 
+            flex: '1 1 200px', 
+            minWidth: 200, 
+            background: 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)',
+            color: 'white',
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(255, 152, 0, 0.3)',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 12px 40px rgba(255, 152, 0, 0.4)',
+            },
+            transition: 'all 0.3s ease'
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h3" component="div" sx={{ fontWeight: 700, mb: 1 }}>
+                    {filteredPendingCount}
+                  </Typography>
+                  <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                    Verification Pending
+                  </Typography>
+                </Box>
+                <Schedule sx={{ fontSize: 48, opacity: 0.8, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ 
+            flex: '1 1 200px', 
+            minWidth: 200, 
+            background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+            color: 'white',
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(76, 175, 80, 0.3)',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 12px 40px rgba(76, 175, 80, 0.4)',
+            },
+            transition: 'all 0.3s ease'
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h3" component="div" sx={{ fontWeight: 700, mb: 1 }}>
+                    {filteredVerifiedCount}
+                  </Typography>
+                  <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                    Verified
+                  </Typography>
+                </Box>
+                <Verified sx={{ fontSize: 48, opacity: 0.8, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+      </Fade>
+
+
+
+      {/* Modern Data Tables Section */}
+      <Fade in timeout={1400}>
+        <Card sx={{ 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <CardHeader 
+            title={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <DashboardCustomize sx={{ color: '#667eea' }} />
+                <Typography variant="h5" sx={{ 
+                  fontWeight: 700,
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  Collected Data Details
                 </Typography>
               </Box>
-              <Checklist sx={{ fontSize: 40, opacity: 0.8 }} />
-            </Box>
-          </CardContent>
-        </Card>
+            }
+            sx={{ 
+              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+              borderBottom: '1px solid rgba(102, 126, 234, 0.1)'
+            }}
+          />
+          <CardContent sx={{ p: 0 }}>
 
-        <Card sx={{ flex: '1 1 200px', minWidth: 200, bgcolor: 'info.light', color: 'white' }}>
-          <CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Box>
-                <Typography variant="h4" component="div">
-                  {filteredDetailedCollected.length}
-                </Typography>
-                <Typography variant="body2">
-                  Detailed Tasks
-                </Typography>
-              </Box>
-              <Assignment sx={{ fontSize: 40, opacity: 0.8 }} />
-            </Box>
-          </CardContent>
-        </Card>
-
-        <Card sx={{ flex: '1 1 200px', minWidth: 200, bgcolor: 'warning.light', color: 'white' }}>
-          <CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Box>
-                <Typography variant="h4" component="div">
-                  {filteredPersonalCollected.length}
-                </Typography>
-                <Typography variant="body2">
-                  Personal Tasks
-                </Typography>
-              </Box>
-              <Person sx={{ fontSize: 40, opacity: 0.8 }} />
-            </Box>
-          </CardContent>
-        </Card>
-      </Box>
-
-      {/* Verification Status Cards */}
-      <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
-        <Card sx={{ flex: '1 1 200px', minWidth: 200, bgcolor: 'warning.light', color: 'white' }}>
-          <CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Box>
-                <Typography variant="h4" component="div">
-                  {filteredPendingCount}
-                </Typography>
-                <Typography variant="body2">
-                  Verification Pending
-                </Typography>
-              </Box>
-              <Schedule sx={{ fontSize: 40, opacity: 0.8 }} />
-            </Box>
-          </CardContent>
-        </Card>
-
-        <Card sx={{ flex: '1 1 200px', minWidth: 200, bgcolor: 'success.light', color: 'white' }}>
-          <CardContent>
-            <Box display="flex" alignItems="center" justifyContent="flex-start">
-              <Box>
-                <Typography variant="h4" component="div">
-                  {filteredVerifiedCount}
-                </Typography>
-                <Typography variant="body2">
-                  Verified
-                </Typography>
-              </Box>
-              <Verified sx={{ fontSize: 40, opacity: 0.8, ml: 'auto' }} />
-            </Box>
-          </CardContent>
-        </Card>
-      </Box>
-
-
-
-      {/* Detailed Data Tables */}
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
-          Collected Data Details
-        </Typography>
-
-        {/* Checklist Tasks Data */}
-        <Accordion defaultExpanded sx={{ mb: 2 }}>
-          <AccordionSummary expandIcon={<ExpandMore />}>
-            <Box display="flex" alignItems="center">
-              <Checklist sx={{ mr: 1, color: 'primary.main' }} />
-              <Typography variant="h6">Checklist Tasks Data ({filteredChecklistCollected.length})</Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            {filteredChecklistCollected.length > 0 ? (
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600 }}>Task Title</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Completion Date</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Items Completed</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Deviations</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Completed By</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredChecklistCollected.map((item) => (
-                      <TableRow key={item.id} hover>
-                        <TableCell>{item.taskTitle || 'Untitled Task'}</TableCell>
-                        <TableCell>{formatDate(item.completionDate)}</TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={`${item.completedItems || 0}/${item.totalItems || 0}`}
-                            color={item.completedItems === item.totalItems ? 'success' : 'warning'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {item.hasDeviations ? (
-                            <Chip label="Yes" color="error" size="small" />
-                          ) : (
-                            <Chip label="No" color="success" size="small" />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {renderUserInfo(item.completedBy || '')}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant={item.verificationStatus === 'verified' ? 'contained' : 'outlined'}
-                            color={item.verificationStatus === 'verified' ? 'success' : 'primary'}
-                            size="small"
-                            startIcon={item.verificationStatus === 'verified' ? <CheckCircle /> : <Verified />}
-                            onClick={() => handleVerifyClick(item)}
-                            sx={{ minWidth: 80 }}
-                          >
-                            {item.verificationStatus === 'verified' ? 'View Data' : 'Verify'}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            ) : (
-              <Typography color="text.secondary">No checklist tasks completed yet.</Typography>
-            )}
-          </AccordionDetails>
-        </Accordion>
-
-        {/* Detailed Tasks Data */}
-        <Accordion defaultExpanded sx={{ mb: 2 }}>
-          <AccordionSummary expandIcon={<ExpandMore />}>
-            <Box display="flex" alignItems="center">
-              <Assignment sx={{ mr: 1, color: 'success.main' }} />
-              <Typography variant="h6">Detailed Tasks Data ({filteredDetailedCollected.length})</Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            {filteredDetailedCollected.length > 0 ? (
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600 }}>Task Title</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Completion Date</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Task Type</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Completed By</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredDetailedCollected.map((item) => (
-                      <TableRow key={item.id} hover>
-                        <TableCell>{item.taskTitle || 'Untitled Task'}</TableCell>
-                        <TableCell>{formatDate(item.completionDate)}</TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={item.taskType || 'Detailed'}
-                            color="primary"
-                            size="small" />
-                        </TableCell>
-                        <TableCell>
-                          {renderUserInfo(item.completedBy || '')}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant={item.verificationStatus === 'verified' ? 'contained' : 'outlined'}
-                            color={item.verificationStatus === 'verified' ? 'success' : 'primary'}
-                            size="small"
-                            startIcon={item.verificationStatus === 'verified' ? <CheckCircle /> : <Verified />}
-                            onClick={() => {
-                              console.log('Detailed task button clicked:', item);
-                              handleVerifyClick(item);
+            {/* Modern Checklist Tasks Data */}
+            <Accordion 
+              defaultExpanded 
+              sx={{ 
+                mb: 2,
+                '& .MuiAccordionSummary-root': {
+                  background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(69, 160, 73, 0.05))',
+                  borderBottom: '1px solid rgba(76, 175, 80, 0.2)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(69, 160, 73, 0.08))',
+                  }
+                },
+                '& .MuiAccordionDetails-root': {
+                  p: 0
+                }
+              }}
+            >
+              <AccordionSummary 
+                expandIcon={<ExpandMore sx={{ color: '#4CAF50' }} />}
+                sx={{ px: 3, py: 2 }}
+              >
+                <Box display="flex" alignItems="center">
+                  <Checklist sx={{ mr: 2, color: '#4CAF50', fontSize: 28 }} />
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600,
+                    background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}>
+                    Checklist Tasks Data ({filteredChecklistCollected.length})
+                  </Typography>
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails>
+                {filteredChecklistCollected.length > 0 ? (
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow sx={{ 
+                          background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                          '& .MuiTableCell-head': {
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.95rem',
+                            textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                          }
+                        }}>
+                          <TableCell>Task Title</TableCell>
+                          <TableCell>Completion Date</TableCell>
+                          <TableCell>Items Completed</TableCell>
+                          <TableCell>Deviations</TableCell>
+                          <TableCell>Completed By</TableCell>
+                          <TableCell>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {filteredChecklistCollected.map((item) => (
+                          <TableRow 
+                            key={item.id} 
+                            hover
+                            sx={{ 
+                              '&:hover': {
+                                background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.05), rgba(69, 160, 73, 0.02))',
+                                transform: 'translateY(-1px)',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                              },
+                              transition: 'all 0.3s ease',
+                              '&:nth-of-type(even)': {
+                                background: 'rgba(76, 175, 80, 0.02)'
+                              }
                             }}
-                            sx={{ minWidth: 80 }}
                           >
-                            {item.verificationStatus === 'verified' ? 'View Data' : 'Verify'}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            ) : (
-              <Typography color="text.secondary">No detailed tasks completed yet.</Typography>
-            )}
-          </AccordionDetails>
-        </Accordion>
+                            <TableCell>
+                              <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                                {item.taskTitle || 'Untitled Task'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" color="textSecondary">
+                                {formatDate(item.completionDate)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip 
+                                label={`${item.completedItems || 0}/${item.totalItems || 0}`}
+                                sx={{ 
+                                  background: item.completedItems === item.totalItems 
+                                    ? 'linear-gradient(45deg, #4CAF50, #45a049)'
+                                    : 'linear-gradient(45deg, #FF9800, #F57C00)',
+                                  color: 'white',
+                                  fontWeight: 600
+                                }}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              {item.hasDeviations ? (
+                                <Chip 
+                                  label="Yes" 
+                                  sx={{ 
+                                    background: 'linear-gradient(45deg, #f44336, #d32f2f)',
+                                    color: 'white',
+                                    fontWeight: 600
+                                  }}
+                                  size="small" 
+                                />
+                              ) : (
+                                <Chip 
+                                  label="No" 
+                                  sx={{ 
+                                    background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                                    color: 'white',
+                                    fontWeight: 600
+                                  }}
+                                  size="small" 
+                                />
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {renderUserInfo(item.completedBy || '')}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant={item.verificationStatus === 'verified' ? 'contained' : 'outlined'}
+                                size="small"
+                                startIcon={item.verificationStatus === 'verified' ? <CheckCircle /> : <Verified />}
+                                onClick={() => handleVerifyClick(item)}
+                                sx={{ 
+                                  minWidth: 100,
+                                  background: item.verificationStatus === 'verified' 
+                                    ? 'linear-gradient(45deg, #4CAF50, #45a049)'
+                                    : 'transparent',
+                                  borderColor: '#4CAF50',
+                                  color: item.verificationStatus === 'verified' ? 'white' : '#4CAF50',
+                                  '&:hover': {
+                                    background: item.verificationStatus === 'verified' 
+                                      ? 'linear-gradient(45deg, #45a049, #3d8b40)'
+                                      : 'rgba(76, 175, 80, 0.1)',
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)'
+                                  },
+                                  transition: 'all 0.3s ease'
+                                }}
+                              >
+                                {item.verificationStatus === 'verified' ? 'View Data' : 'Verify'}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Box sx={{ p: 4, textAlign: 'center' }}>
+                    <Checklist sx={{ fontSize: 64, color: '#ccc', mb: 2 }} />
+                    <Typography variant="h6" color="textSecondary" sx={{ mb: 1 }}>
+                      No Checklist Tasks Completed Yet
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Checklist tasks will appear here once team members complete their assignments
+                    </Typography>
+                  </Box>
+                )}
+              </AccordionDetails>
+            </Accordion>
 
-        {/* Personal Tasks Data */}
-        <Accordion defaultExpanded sx={{ mb: 2 }}>
-          <AccordionSummary expandIcon={<ExpandMore />}>
-            <Box display="flex" alignItems="center">
-              <Person sx={{ mr: 1, color: 'info.main' }} />
-              <Typography variant="h6">Personal Tasks Data ({filteredPersonalCollected.length})</Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            {filteredPersonalCollected.length > 0 ? (
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600 }}>Task Title</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Completion Date</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Action Type</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredPersonalCollected.map((item) => (
-                      <TableRow key={item.id} hover>
-                        <TableCell>{item.taskTitle || 'Untitled Task'}</TableCell>
-                        <TableCell>{formatDate(item.completionDate)}</TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={item.actionType || 'Task Completed'}
-                            color="info"
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {renderUserInfo(item.userId || item.completedBy || '')}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant={item.verificationStatus === 'verified' ? 'contained' : 'outlined'}
-                            color={item.verificationStatus === 'verified' ? 'success' : 'primary'}
-                            size="small"
-                            startIcon={item.verificationStatus === 'verified' ? <CheckCircle /> : <Verified />}
-                            onClick={() => handleVerifyClick(item)}
-                            sx={{ minWidth: 80 }}
+            {/* Modern Detailed Tasks Data */}
+            <Accordion 
+              defaultExpanded 
+              sx={{ 
+                mb: 2,
+                '& .MuiAccordionSummary-root': {
+                  background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(25, 118, 210, 0.05))',
+                  borderBottom: '1px solid rgba(33, 150, 243, 0.2)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(25, 118, 210, 0.08))',
+                  }
+                },
+                '& .MuiAccordionDetails-root': {
+                  p: 0
+                }
+              }}
+            >
+              <AccordionSummary 
+                expandIcon={<ExpandMore sx={{ color: '#2196F3' }} />}
+                sx={{ px: 3, py: 2 }}
+              >
+                <Box display="flex" alignItems="center">
+                  <Assignment sx={{ mr: 2, color: '#2196F3', fontSize: 28 }} />
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600,
+                    background: 'linear-gradient(45deg, #2196F3, #1976D2)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}>
+                    Detailed Tasks Data ({filteredDetailedCollected.length})
+                  </Typography>
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails>
+                {filteredDetailedCollected.length > 0 ? (
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow sx={{ 
+                          background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+                          '& .MuiTableCell-head': {
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.95rem',
+                            textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                          }
+                        }}>
+                          <TableCell>Task Title</TableCell>
+                          <TableCell>Completion Date</TableCell>
+                          <TableCell>Task Type</TableCell>
+                          <TableCell>Completed By</TableCell>
+                          <TableCell>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {filteredDetailedCollected.map((item) => (
+                          <TableRow 
+                            key={item.id} 
+                            hover
+                            sx={{ 
+                              '&:hover': {
+                                background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.05), rgba(25, 118, 210, 0.02))',
+                                transform: 'translateY(-1px)',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                              },
+                              transition: 'all 0.3s ease',
+                              '&:nth-of-type(even)': {
+                                background: 'rgba(33, 150, 243, 0.02)'
+                              }
+                            }}
                           >
-                            {item.verificationStatus === 'verified' ? 'View Data' : 'Verify'}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            ) : (
-              <Typography color="text.secondary">No personal tasks completed yet.</Typography>
-            )}
-          </AccordionDetails>
-        </Accordion>
-      </Box>
+                            <TableCell>
+                              <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                                {item.taskTitle || 'Untitled Task'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" color="textSecondary">
+                                {formatDate(item.completionDate)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip 
+                                label={item.taskType || 'Detailed'}
+                                sx={{ 
+                                  background: 'linear-gradient(45deg, #2196F3, #1976D2)',
+                                  color: 'white',
+                                  fontWeight: 600
+                                }}
+                                size="small" 
+                              />
+                            </TableCell>
+                            <TableCell>
+                              {renderUserInfo(item.completedBy || '')}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant={item.verificationStatus === 'verified' ? 'contained' : 'outlined'}
+                                size="small"
+                                startIcon={item.verificationStatus === 'verified' ? <CheckCircle /> : <Verified />}
+                                onClick={() => {
+                                  console.log('Detailed task button clicked:', item);
+                                  handleVerifyClick(item);
+                                }}
+                                sx={{ 
+                                  minWidth: 100,
+                                  background: item.verificationStatus === 'verified' 
+                                    ? 'linear-gradient(45deg, #4CAF50, #45a049)'
+                                    : 'transparent',
+                                  borderColor: '#2196F3',
+                                  color: item.verificationStatus === 'verified' ? 'white' : '#2196F3',
+                                  '&:hover': {
+                                    background: item.verificationStatus === 'verified' 
+                                      ? 'linear-gradient(45deg, #45a049, #3d8b40)'
+                                      : 'rgba(33, 150, 243, 0.1)',
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)'
+                                  },
+                                  transition: 'all 0.3s ease'
+                                }}
+                              >
+                                {item.verificationStatus === 'verified' ? 'View Data' : 'Verify'}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Box sx={{ p: 4, textAlign: 'center' }}>
+                    <Assignment sx={{ fontSize: 64, color: '#ccc', mb: 2 }} />
+                    <Typography variant="h6" color="textSecondary" sx={{ mb: 1 }}>
+                      No Detailed Tasks Completed Yet
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Detailed tasks will appear here once team members complete their assignments
+                    </Typography>
+                  </Box>
+                )}
+              </AccordionDetails>
+            </Accordion>
 
-      {/* Verify Data Dialog */}
+            {/* Modern Personal Tasks Data */}
+            <Accordion 
+              defaultExpanded 
+              sx={{ 
+                mb: 2,
+                '& .MuiAccordionSummary-root': {
+                  background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(245, 124, 0, 0.05))',
+                  borderBottom: '1px solid rgba(255, 152, 0, 0.2)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(245, 124, 0, 0.08))',
+                  }
+                },
+                '& .MuiAccordionDetails-root': {
+                  p: 0
+                }
+              }}
+            >
+              <AccordionSummary 
+                expandIcon={<ExpandMore sx={{ color: '#FF9800' }} />}
+                sx={{ px: 3, py: 2 }}
+              >
+                <Box display="flex" alignItems="center">
+                  <Person sx={{ mr: 2, color: '#FF9800', fontSize: 28 }} />
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600,
+                    background: 'linear-gradient(45deg, #FF9800, #F57C00)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}>
+                    Personal Tasks Data ({filteredPersonalCollected.length})
+                  </Typography>
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails>
+                {filteredPersonalCollected.length > 0 ? (
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow sx={{ 
+                          background: 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)',
+                          '& .MuiTableCell-head': {
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.95rem',
+                            textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                          }
+                        }}>
+                          <TableCell>Task Title</TableCell>
+                          <TableCell>Completion Date</TableCell>
+                          <TableCell>Action Type</TableCell>
+                          <TableCell>User</TableCell>
+                          <TableCell>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {filteredPersonalCollected.map((item) => (
+                          <TableRow 
+                            key={item.id} 
+                            hover
+                            sx={{ 
+                              '&:hover': {
+                                background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.05), rgba(245, 124, 0, 0.02))',
+                                transform: 'translateY(-1px)',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                              },
+                              transition: 'all 0.3s ease',
+                              '&:nth-of-type(even)': {
+                                background: 'rgba(255, 152, 0, 0.02)'
+                              }
+                            }}
+                          >
+                            <TableCell>
+                              <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                                {item.taskTitle || 'Untitled Task'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" color="textSecondary">
+                                {formatDate(item.completionDate)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip 
+                                label={item.actionType || 'Task Completed'}
+                                sx={{ 
+                                  background: 'linear-gradient(45deg, #FF9800, #F57C00)',
+                                  color: 'white',
+                                  fontWeight: 600
+                                }}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              {renderUserInfo(item.userId || item.completedBy || '')}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant={item.verificationStatus === 'verified' ? 'contained' : 'outlined'}
+                                size="small"
+                                startIcon={item.verificationStatus === 'verified' ? <CheckCircle /> : <Verified />}
+                                onClick={() => handleVerifyClick(item)}
+                                sx={{ 
+                                  minWidth: 100,
+                                  background: item.verificationStatus === 'verified' 
+                                    ? 'linear-gradient(45deg, #4CAF50, #45a049)'
+                                    : 'transparent',
+                                  borderColor: '#FF9800',
+                                  color: item.verificationStatus === 'verified' ? 'white' : '#FF9800',
+                                  '&:hover': {
+                                    background: item.verificationStatus === 'verified' 
+                                      ? 'linear-gradient(45deg, #45a049, #3d8b40)'
+                                      : 'rgba(255, 152, 0, 0.1)',
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: '0 4px 12px rgba(255, 152, 0, 0.3)'
+                                  },
+                                  transition: 'all 0.3s ease'
+                                }}
+                              >
+                                {item.verificationStatus === 'verified' ? 'View Data' : 'Verify'}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Box sx={{ p: 4, textAlign: 'center' }}>
+                    <Person sx={{ fontSize: 64, color: '#ccc', mb: 2 }} />
+                    <Typography variant="h6" color="textSecondary" sx={{ mb: 1 }}>
+                      No Personal Tasks Completed Yet
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Personal tasks will appear here once team members complete their assignments
+                    </Typography>
+                  </Box>
+                )}
+              </AccordionDetails>
+            </Accordion>
+          </CardContent>
+        </Card>
+      </Fade>
+
+      {/* Modern Verify Data Dialog */}
       <Dialog 
         open={verifyDialogOpen} 
         onClose={handleCloseVerifyDialog}
         maxWidth="md"
         fullWidth
         scroll="paper"
+        PaperProps={{
+          sx: {
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }
+        }}
       >
-        <DialogTitle>
-          <Box display="flex" alignItems="center">
+        <DialogTitle sx={{ 
+          background: selectedData?.verificationStatus === 'verified' 
+            ? 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)'
+            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          textAlign: 'center',
+          py: 3
+        }}>
+          <Box display="flex" alignItems="center" justifyContent="center">
             {selectedData?.verificationStatus === 'verified' ? (
-              <CheckCircle sx={{ mr: 1, color: 'success.main' }} />
+              <CheckCircle sx={{ mr: 2, fontSize: 32, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
             ) : (
-              <Verified sx={{ mr: 1, color: 'primary.main' }} />
+              <Verified sx={{ mr: 2, fontSize: 32, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
             )}
-            {selectedData?.verificationStatus === 'verified' ? 'View Verified Data' : 'Verify Collected Data'}
+            <Typography variant="h5" sx={{ 
+              fontWeight: 700,
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}>
+              {selectedData?.verificationStatus === 'verified' ? 'View Verified Data' : 'Verify Collected Data'}
+            </Typography>
           </Box>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ p: 3 }}>
           {selectedData && renderCollectedData(selectedData)}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseVerifyDialog} color="primary">
+        <DialogActions sx={{ 
+          p: 3, 
+          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.02))',
+          borderTop: '1px solid rgba(102, 126, 234, 0.1)'
+        }}>
+          <Button 
+            onClick={handleCloseVerifyDialog} 
+            sx={{
+              background: 'linear-gradient(45deg, #9E9E9E, #757575)',
+              color: 'white',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #757575, #616161)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(158, 158, 158, 0.3)'
+              },
+              transition: 'all 0.3s ease',
+              fontWeight: 600,
+              px: 3
+            }}
+          >
             Close
           </Button>
           {selectedData?.verificationStatus !== 'verified' && (
             <Button 
               variant="contained" 
-              color="success" 
               startIcon={<Verified />}
               onClick={() => handleVerifyTask(selectedData!)}
               disabled={!selectedData}
+              sx={{
+                background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)'
+                },
+                transition: 'all 0.3s ease',
+                fontWeight: 600,
+                px: 3
+              }}
             >
               Verify
             </Button>

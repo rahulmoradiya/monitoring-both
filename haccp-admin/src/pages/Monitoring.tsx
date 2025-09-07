@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Select, MenuItem, FormControl, InputLabel, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Switch, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Checkbox, FormControlLabel, Divider } from '@mui/material';
+import { Box, Typography, Button, Select, MenuItem, FormControl, InputLabel, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Switch, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Checkbox, FormControlLabel, Divider, Card, CardContent, CardHeader, Fade, Stack, Tooltip } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import { Add, Search, FilterList, Monitor, Settings, Clear } from '@mui/icons-material';
 import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, collectionGroup, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { auth } from '../firebase';
 import SOPSelectDialog, { SOP as SOPType } from '../components/SOPSelect/SOPSelectDialog';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import Stack from '@mui/material/Stack';
 import Stepper from '@mui/material/Stepper';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
@@ -386,98 +386,366 @@ export default function Monitoring() {
   });
 
   return (
-    <Box sx={{ maxWidth: 900, mx: 'auto', mt: 4 }}>
-      {/* Filter Bar */}
-      <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>Monitoring tasks</Typography>
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>In Use</InputLabel>
-          <Select
-            value={inUseFilter}
-            label="In Use"
-            onChange={e => setInUseFilter(e.target.value)}
-          >
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="active">Active</MenuItem>
-            <MenuItem value="inactive">Inactive</MenuItem>
-          </Select>
-        </FormControl>
-        <TextField
-          size="small"
-          label="Search by Name"
-          value={searchFilter}
-          onChange={e => setSearchFilter(e.target.value)}
-          sx={{ minWidth: 180 }}
-        />
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => {
-            setInUseFilter('all');
-            setRoleFilter('all');
-            setSearchFilter('');
-          }}
-        >
-          Clear Filters
-        </Button>
-      </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
-        <Button variant="contained" color="success" sx={{ fontWeight: 600, borderRadius: 2, px: 3 }} onClick={() => { setDialogOpen(true); setStep(1); }}>
-          Add monitoring task
-        </Button>
-      </Box>
-      <TableContainer component={Paper} sx={{ borderRadius: 3 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Monitoring tasks</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Type</TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>In use</TableCell>
-              <TableCell align="right" sx={{ width: 48 }}></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredTasks.map((task, idx) => (
-              <TableRow key={task.id || idx} hover>
-                <TableCell sx={{ fontWeight: 500, fontSize: '1.1rem' }}>{task.name}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={task.type === 'detailed' ? 'Detailed' : task.type === 'checklist' ? 'Checklist' : 'Monitoring'} 
-                    color={task.type === 'detailed' ? 'primary' : task.type === 'checklist' ? 'secondary' : 'default'} 
-                    size="small" 
-                  />
-                </TableCell>
-                <TableCell>
-                  <Switch
-                    checked={task.inUse}
-                    color="success"
-                    onChange={async (e) => {
-                      const newInUse = e.target.checked;
-                      if (!task.id || !companyCode) return;
-                      try {
-                        // Determine collection based on task type
-                        const collectionName = task.type === 'detailed' ? 'detailedCreation' : 'checklistCreation';
-                        await updateDoc(doc(db, 'companies', companyCode, collectionName, task.id), { inUse: newInUse });
-                        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, inUse: newInUse } : t));
-                      } catch (error) {
-                        alert('Error updating status: ' + (error as any).message);
+    <Box sx={{ 
+      p: 3, 
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      minHeight: '100vh',
+      position: 'relative'
+    }}>
+      {/* Modern Header with Glass Morphism */}
+      <Fade in timeout={600}>
+        <Card sx={{ 
+          mb: 4, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <Box sx={{ 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            p: 3,
+            textAlign: 'center'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+              <Monitor sx={{ 
+                fontSize: 48, 
+                color: 'white', 
+                mr: 2,
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+              }} />
+              <Typography variant="h3" component="h1" sx={{ 
+                fontWeight: 700, 
+                color: 'white',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}>
+                Manage Monitoring
+              </Typography>
+            </Box>
+            <Typography variant="h6" sx={{ 
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontWeight: 400,
+              textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+            }}>
+              Create and manage your monitoring tasks and checklists
+            </Typography>
+          </Box>
+        </Card>
+      </Fade>
+
+      {/* Modern Filter Section */}
+      <Fade in timeout={800}>
+        <Card sx={{ 
+          mb: 4, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <CardHeader 
+            title={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <FilterList sx={{ color: '#667eea' }} />
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 600,
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  Filters & Search
+                </Typography>
+              </Box>
+            }
+            sx={{ 
+              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+              borderBottom: '1px solid rgba(102, 126, 234, 0.1)'
+            }}
+          />
+          <CardContent sx={{ p: 3 }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+                <FormControl sx={{ minWidth: 180 }}>
+                  <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>In Use</InputLabel>
+                  <Select
+                    value={inUseFilter}
+                    label="In Use"
+                    onChange={e => setInUseFilter(e.target.value)}
+                    sx={{
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(102, 126, 234, 0.3)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(102, 126, 234, 0.5)',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#667eea',
                       }
                     }}
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton onClick={() => { setSelectedTask(task); setActionModalOpen(true); }}>
-                    <MoreVertIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      {/* Add Monitoring Task Dialog - Step 1 */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Monitoring Task</DialogTitle>
+                  >
+                    <MenuItem value="all">All Tasks</MenuItem>
+                    <MenuItem value="active">Active Only</MenuItem>
+                    <MenuItem value="inactive">Inactive Only</MenuItem>
+                  </Select>
+                </FormControl>
+                <TextField
+                  size="medium"
+                  label="Search by Name"
+                  value={searchFilter}
+                  onChange={e => setSearchFilter(e.target.value)}
+                  InputProps={{ 
+                    startAdornment: <Search sx={{ mr: 1, color: '#667eea' }} /> 
+                  }}
+                  sx={{ 
+                    minWidth: 300,
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: 'rgba(102, 126, 234, 0.3)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(102, 126, 234, 0.5)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#667eea',
+                      }
+                    }
+                  }}
+                />
+                <Button
+                  variant="outlined"
+                  startIcon={<Clear />}
+                  onClick={() => {
+                    setInUseFilter('all');
+                    setRoleFilter('all');
+                    setSearchFilter('');
+                  }}
+                  sx={{
+                    borderColor: '#f44336',
+                    color: '#f44336',
+                    '&:hover': {
+                      borderColor: '#d32f2f',
+                      background: 'rgba(244, 67, 54, 0.1)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(244, 67, 54, 0.3)'
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </Stack>
+              <Button 
+                variant="contained" 
+                startIcon={<Add />}
+                onClick={() => { setDialogOpen(true); setStep(1); }}
+                sx={{
+                  background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)'
+                  },
+                  transition: 'all 0.3s ease',
+                  fontWeight: 600,
+                  borderRadius: 3,
+                  px: 4,
+                  py: 1.5
+                }}
+              >
+                Add Monitoring Task
+              </Button>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Fade>
+
+      {/* Modern Monitoring Tasks Table */}
+      <Fade in timeout={1200}>
+        <Card sx={{ 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <CardHeader 
+            title={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Settings sx={{ color: '#667eea' }} />
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 600,
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  Monitoring Tasks
+                </Typography>
+                <Chip 
+                  label={`${filteredTasks.length} ${filteredTasks.length === 1 ? 'Task' : 'Tasks'}`}
+                  sx={{ 
+                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.8rem'
+                  }}
+                />
+              </Box>
+            }
+            sx={{ 
+              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+              borderBottom: '1px solid rgba(102, 126, 234, 0.1)'
+            }}
+          />
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ 
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  '& .MuiTableCell-head': {
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.95rem',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                  }
+                }}>
+                  <TableCell>Task Name</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredTasks.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Monitor sx={{ fontSize: 64, color: '#ccc', mb: 2 }} />
+                        <Typography variant="h6" color="textSecondary" sx={{ mb: 1 }}>
+                          No Monitoring Tasks Found
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          {searchFilter || inUseFilter !== 'all'
+                            ? 'Try adjusting your filters or search terms'
+                            : 'Get started by creating your first monitoring task'
+                          }
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredTasks.map((task, idx) => (
+                    <TableRow 
+                      key={task.id || idx}
+                      sx={{ 
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.02))',
+                          transform: 'translateY(-1px)',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                        },
+                        transition: 'all 0.3s ease',
+                        '&:nth-of-type(even)': {
+                          background: 'rgba(102, 126, 234, 0.02)'
+                        }
+                      }}
+                    >
+                      <TableCell>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                          {task.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={task.type === 'detailed' ? 'Detailed' : task.type === 'checklist' ? 'Checklist' : 'Monitoring'} 
+                          size="small"
+                          sx={{ 
+                            background: task.type === 'detailed' 
+                              ? 'linear-gradient(45deg, #2196F3, #1976D2)'
+                              : task.type === 'checklist' 
+                              ? 'linear-gradient(45deg, #9C27B0, #7B1FA2)'
+                              : 'linear-gradient(45deg, #4CAF50, #388E3C)',
+                            color: 'white',
+                            fontWeight: 600
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Switch
+                            checked={task.inUse}
+                            color="success"
+                            onChange={async (e) => {
+                              const newInUse = e.target.checked;
+                              if (!task.id || !companyCode) return;
+                              try {
+                                // Determine collection based on task type
+                                const collectionName = task.type === 'detailed' ? 'detailedCreation' : 'checklistCreation';
+                                await updateDoc(doc(db, 'companies', companyCode, collectionName, task.id), { inUse: newInUse });
+                                setTasks(prev => prev.map(t => t.id === task.id ? { ...t, inUse: newInUse } : t));
+                              } catch (error) {
+                                alert('Error updating status: ' + (error as any).message);
+                              }
+                            }}
+                          />
+                          <Typography variant="body2" color={task.inUse ? 'success.main' : 'text.secondary'}>
+                            {task.inUse ? 'Active' : 'Inactive'}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="Task Options">
+                          <IconButton 
+                            onClick={() => { setSelectedTask(task); setActionModalOpen(true); }}
+                            sx={{
+                              color: '#667eea',
+                              '&:hover': {
+                                background: 'rgba(102, 126, 234, 0.1)',
+                                transform: 'scale(1.1)'
+                              },
+                              transition: 'all 0.3s ease'
+                            }}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
+      </Fade>
+      {/* Modern Add Monitoring Task Dialog */}
+      <Dialog 
+        open={dialogOpen} 
+        onClose={() => setDialogOpen(false)} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          textAlign: 'center',
+          fontWeight: 600,
+          textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+        }}>
+          {editMode ? 'Edit Monitoring Task' : 'Add New Monitoring Task'}
+        </DialogTitle>
         <DialogContent>
           <Stepper activeStep={step - 1} alternativeLabel sx={{ mb: 3 }}>
             {steps.map(label => (
@@ -1020,91 +1288,157 @@ export default function Monitoring() {
           )}
         </DialogActions>
       </Dialog>
-      {/* Action Modal for Edit/Delete */}
-      <Dialog open={actionModalOpen} onClose={() => setActionModalOpen(false)}>
-        <DialogTitle>Task Options</DialogTitle>
-        <DialogContent>
-          <Button
-            color="error"
-            variant="outlined"
-            fullWidth
-            sx={{ mb: 2 }}
-            onClick={async () => {
-              if (selectedTask?.id && companyCode) {
-                // Determine collection based on task type
-                const collectionName = selectedTask.type === 'detailed' ? 'detailedCreation' : 'checklistCreation';
-                await deleteDoc(doc(db, 'companies', companyCode, collectionName, selectedTask.id));
-                setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
+      {/* Modern Action Modal for Edit/Delete */}
+      <Dialog 
+        open={actionModalOpen} 
+        onClose={() => setActionModalOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          textAlign: 'center',
+          fontWeight: 600,
+          textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+        }}>
+          Task Options
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={2}>
+            <Button
+              variant="outlined"
+              fullWidth
+              startIcon={<MoreVertIcon />}
+              onClick={() => {
+                setEditMode(true);
+                setDialogOpen(true);
+                setStep(1);
+                setNewTask({
+                  name: selectedTask.name,
+                  responsibility: selectedTask.responsibility,
+                  inUse: selectedTask.inUse,
+                });
+                setTaskType(selectedTask.type || 'detailed');
+                setDetails({ frequency: FREQUENCIES[0], oneTimeDate: '', oneTimeTime: '', startTime: '', startDate: '' });
+                setChecklist(selectedTask.checklist || [{ title: '', allowNotDone: false, locationType: '', locationId: '', locationName: '' }]);
+                setFields(selectedTask.fields || []); // Set fields for editing
+                setInstructionSOPs(selectedTask.instructionSOPs || []); // Set instruction SOPs for editing
+                setOneTimeDate(selectedTask.details?.oneTimeDate || '');
+                setOneTimeTime(selectedTask.details?.oneTimeTime || '');
+                setStartTime(selectedTask.details?.startTime || '');
                 setActionModalOpen(false);
-              }
-            }}
-          >
-            Delete
-          </Button>
-          <Button
-            color="primary"
-            variant="contained"
-            fullWidth
-            sx={{ mb: 2 }}
-            onClick={() => {
-              setEditMode(true);
-              setDialogOpen(true);
-              setStep(1);
-              setNewTask({
-                name: selectedTask.name,
-                responsibility: selectedTask.responsibility,
-                inUse: selectedTask.inUse,
-              });
-              setTaskType(selectedTask.type || 'detailed');
-              setDetails({ frequency: FREQUENCIES[0], oneTimeDate: '', oneTimeTime: '', startTime: '', startDate: '' });
-              setChecklist(selectedTask.checklist || [{ title: '', allowNotDone: false, locationType: '', locationId: '', locationName: '' }]);
-              setFields(selectedTask.fields || []); // Set fields for editing
-              setInstructionSOPs(selectedTask.instructionSOPs || []); // Set instruction SOPs for editing
-              setOneTimeDate(selectedTask.details?.oneTimeDate || '');
-              setOneTimeTime(selectedTask.details?.oneTimeTime || '');
-              setStartTime(selectedTask.details?.startTime || '');
-              setActionModalOpen(false);
-            }}
-          >
-            Edit
-          </Button>
-          <Button
-            color="secondary"
-            variant="outlined"
-            fullWidth
-            onClick={async () => {
-              if (!selectedTask || !companyCode) return;
-              try {
-                // Prepare duplicate data
-                const duplicate = {
-                  ...selectedTask,
-                  name: `${selectedTask.name} (Copy)` || 'Untitled (Copy)',
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-                  createdBy: currentUser?.uid || auth.currentUser?.uid,
-                };
-                // Remove id from duplicate
-                delete duplicate.id;
-                // Remove any undefined fields (especially checklist/fields)
-                if (!duplicate.fields) delete duplicate.fields;
-                if (!duplicate.checklist) delete duplicate.checklist;
-                // Determine collection based on task type
-                const collectionName = selectedTask.type === 'detailed' ? 'detailedCreation' : 'checklistCreation';
-                // Save to Firebase
-                const docRef = await addDoc(collection(db, 'companies', companyCode, collectionName), duplicate);
-                setTasks(prev => [{ ...duplicate, id: docRef.id }, ...prev]);
-                alert('Task duplicated successfully!');
-                setActionModalOpen(false);
-              } catch (error) {
-                let msg = 'Unknown error';
-                if (error instanceof Error) msg = error.message;
-                alert('Error duplicating task: ' + msg);
-              }
-            }}
-          >
-            Duplicate
-          </Button>
+              }}
+              sx={{
+                borderColor: '#2196F3',
+                color: '#2196F3',
+                '&:hover': {
+                  borderColor: '#1976D2',
+                  background: 'rgba(33, 150, 243, 0.1)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)'
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              Edit Task
+            </Button>
+            <Button
+              variant="outlined"
+              fullWidth
+              startIcon={<Add />}
+              onClick={async () => {
+                if (!selectedTask || !companyCode) return;
+                try {
+                  // Prepare duplicate data
+                  const duplicate = {
+                    ...selectedTask,
+                    name: `${selectedTask.name} (Copy)` || 'Untitled (Copy)',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    createdBy: currentUser?.uid || auth.currentUser?.uid,
+                  };
+                  // Remove id from duplicate
+                  delete duplicate.id;
+                  // Remove any undefined fields (especially checklist/fields)
+                  if (!duplicate.fields) delete duplicate.fields;
+                  if (!duplicate.checklist) delete duplicate.checklist;
+                  // Determine collection based on task type
+                  const collectionName = selectedTask.type === 'detailed' ? 'detailedCreation' : 'checklistCreation';
+                  // Save to Firebase
+                  const docRef = await addDoc(collection(db, 'companies', companyCode, collectionName), duplicate);
+                  setTasks(prev => [{ ...duplicate, id: docRef.id }, ...prev]);
+                  alert('Task duplicated successfully!');
+                  setActionModalOpen(false);
+                } catch (error) {
+                  let msg = 'Unknown error';
+                  if (error instanceof Error) msg = error.message;
+                  alert('Error duplicating task: ' + msg);
+                }
+              }}
+              sx={{
+                borderColor: '#4CAF50',
+                color: '#4CAF50',
+                '&:hover': {
+                  borderColor: '#45a049',
+                  background: 'rgba(76, 175, 80, 0.1)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)'
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              Duplicate Task
+            </Button>
+            <Button
+              variant="outlined"
+              fullWidth
+              startIcon={<MoreVertIcon />}
+              onClick={async () => {
+                if (selectedTask?.id && companyCode) {
+                  // Determine collection based on task type
+                  const collectionName = selectedTask.type === 'detailed' ? 'detailedCreation' : 'checklistCreation';
+                  await deleteDoc(doc(db, 'companies', companyCode, collectionName, selectedTask.id));
+                  setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
+                  setActionModalOpen(false);
+                }
+              }}
+              sx={{
+                borderColor: '#f44336',
+                color: '#f44336',
+                '&:hover': {
+                  borderColor: '#d32f2f',
+                  background: 'rgba(244, 67, 54, 0.1)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(244, 67, 54, 0.3)'
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              Delete Task
+            </Button>
+          </Stack>
         </DialogContent>
+        <DialogActions sx={{ p: 3, justifyContent: 'center' }}>
+          <Button 
+            onClick={() => setActionModalOpen(false)}
+            sx={{
+              color: '#666',
+              '&:hover': {
+                background: 'rgba(0, 0, 0, 0.05)'
+              }
+            }}
+          >
+            Cancel
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

@@ -4,9 +4,15 @@ import {
   Typography, 
   Paper, 
   CircularProgress,
-  LinearProgress
+  LinearProgress,
+  Card,
+  CardContent,
+  CardHeader,
+  Fade,
+  Stack,
+  Chip
 } from '@mui/material';
-import { Dashboard, TrendingUp, CalendarToday, Assignment } from '@mui/icons-material';
+import { Dashboard, TrendingUp, CalendarToday, Assignment, CheckCircle, Schedule, Assessment } from '@mui/icons-material';
 import { collection, getDocs, query } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
@@ -249,138 +255,384 @@ export default function Overview() {
 
   if (hasNoData) {
     return (
-      <Box sx={{ p: 3 }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-          <Dashboard sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 600, color: 'primary.main' }}>
-            Overview
-          </Typography>
-        </Box>
-
-        {/* No Data Message */}
-        <Paper sx={{ p: 6, textAlign: 'center', bgcolor: 'grey.50' }}>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h3" sx={{ color: 'text.secondary', mb: 2 }}>
-              📊
-            </Typography>
-            <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 600, mb: 2 }}>
-              Welcome to Your Dashboard!
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              This is your first time here. Your dashboard will show monitoring tasks, progress tracking, and key metrics once you start creating and assigning tasks.
-            </Typography>
-          </Box>
-          
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
-              To get started:
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                • Create monitoring tasks in the "Manage Monitoring" section
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                • Assign tasks to team members in "Teams Management"
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                • Set up your company profile in "Settings"
+      <Box sx={{ 
+        p: 3, 
+        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+        minHeight: '100vh',
+        position: 'relative'
+      }}>
+        {/* Modern Header with Glass Morphism */}
+        <Fade in timeout={600}>
+          <Card sx={{ 
+            mb: 4, 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <Box sx={{ 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              p: 3,
+              textAlign: 'center'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                <Dashboard sx={{ 
+                  fontSize: 48, 
+                  color: 'white', 
+                  mr: 2,
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                }} />
+                <Typography variant="h3" component="h1" sx={{ 
+                  fontWeight: 700, 
+                  color: 'white',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                }}>
+                  Overview Dashboard
+                </Typography>
+              </Box>
+              <Typography variant="h6" sx={{ 
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontWeight: 400,
+                textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+              }}>
+                Your comprehensive monitoring task summary
               </Typography>
             </Box>
-          </Box>
-        </Paper>
+          </Card>
+        </Fade>
+
+        {/* Modern No Data Message */}
+        <Fade in timeout={800}>
+          <Card sx={{ 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <CardContent sx={{ p: 6, textAlign: 'center' }}>
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h1" sx={{ 
+                  color: '#667eea', 
+                  mb: 3,
+                  fontSize: '4rem',
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                }}>
+                  📊
+                </Typography>
+                <Typography variant="h4" sx={{ 
+                  color: '#2c3e50', 
+                  fontWeight: 700, 
+                  mb: 2,
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  Welcome to Your Dashboard!
+                </Typography>
+                <Typography variant="h6" sx={{ 
+                  color: '#2c3e50', 
+                  fontWeight: 400,
+                  mb: 4,
+                  lineHeight: 1.6
+                }}>
+                  This is your first time here. Your dashboard will show monitoring tasks, progress tracking, and key metrics once you start creating and assigning tasks.
+                </Typography>
+              </Box>
+              
+              <Box sx={{ 
+                p: 4, 
+                borderRadius: 3,
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+                border: '1px solid rgba(102, 126, 234, 0.2)'
+              }}>
+                <Typography variant="h6" sx={{ 
+                  color: '#2c3e50', 
+                  fontWeight: 600, 
+                  mb: 3
+                }}>
+                  To get started:
+                </Typography>
+                <Stack spacing={2} sx={{ alignItems: 'flex-start' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ 
+                      width: 8, 
+                      height: 8, 
+                      borderRadius: '50%', 
+                      background: 'linear-gradient(45deg, #667eea, #764ba2)'
+                    }} />
+                    <Typography variant="body1" sx={{ color: '#2c3e50', fontWeight: 500 }}>
+                      Create monitoring tasks in the "Manage Monitoring" section
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ 
+                      width: 8, 
+                      height: 8, 
+                      borderRadius: '50%', 
+                      background: 'linear-gradient(45deg, #667eea, #764ba2)'
+                    }} />
+                    <Typography variant="body1" sx={{ color: '#2c3e50', fontWeight: 500 }}>
+                      Assign tasks to team members in "Teams Management"
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ 
+                      width: 8, 
+                      height: 8, 
+                      borderRadius: '50%', 
+                      background: 'linear-gradient(45deg, #667eea, #764ba2)'
+                    }} />
+                    <Typography variant="body1" sx={{ color: '#2c3e50', fontWeight: 500 }}>
+                      Set up your company profile in "Settings"
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Box>
+            </CardContent>
+          </Card>
+        </Fade>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-        <Dashboard sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 600, color: 'primary.main' }}>
-          Overview
-        </Typography>
-      </Box>
-
-
-
-      {/* Progress Bar Section */}
-      <Paper sx={{ p: 3, mb: 3, bgcolor: 'grey.50' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main', mr: 2 }}>
-            📊 Task Completion Progress
-          </Typography>
-        </Box>
-        
-        <Box sx={{ mb: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              Progress: {monitoringSummary.totalCompletedToday} of {monitoringSummary.totalTasks} tasks completed
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
-              {monitoringSummary.totalTasks > 0 ? Math.round((monitoringSummary.totalCompletedToday / monitoringSummary.totalTasks) * 100) : 0}%
+    <Box sx={{ 
+      p: 3, 
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      minHeight: '100vh',
+      position: 'relative'
+    }}>
+      {/* Modern Header with Glass Morphism */}
+      <Fade in timeout={600}>
+        <Card sx={{ 
+          mb: 4, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <Box sx={{ 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            p: 3,
+            textAlign: 'center'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+              <Dashboard sx={{ 
+                fontSize: 48, 
+                color: 'white', 
+                mr: 2,
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+              }} />
+              <Typography variant="h3" component="h1" sx={{ 
+                fontWeight: 700, 
+                color: 'white',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}>
+                Overview Dashboard
+              </Typography>
+            </Box>
+            <Typography variant="h6" sx={{ 
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontWeight: 400,
+              textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+            }}>
+              Your comprehensive monitoring task summary
             </Typography>
           </Box>
-          
-          <LinearProgress 
-            variant="determinate" 
-            value={monitoringSummary.totalTasks > 0 ? (monitoringSummary.totalCompletedToday / monitoringSummary.totalTasks) * 100 : 0}
-            sx={{ 
-              height: 12, 
-              borderRadius: 6,
-              bgcolor: 'grey.300',
-              '& .MuiLinearProgress-bar': {
-                borderRadius: 6,
-                bgcolor: 'success.main'
-              }
-            }}
+        </Card>
+      </Fade>
+
+
+
+      {/* Modern Progress Card */}
+      <Fade in timeout={800}>
+        <Card sx={{ 
+          mb: 3, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <CardHeader
+            title={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Assessment sx={{ color: '#667eea', fontSize: 28 }} />
+                <Typography variant="h5" sx={{ 
+                  fontWeight: 600, 
+                  color: '#2c3e50',
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  Task Completion Progress
+                </Typography>
+              </Box>
+            }
           />
-        </Box>
-        
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          <Box sx={{ textAlign: 'center', minWidth: '100px' }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>
-              {monitoringSummary.totalCompletedToday}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Completed
-            </Typography>
-          </Box>
-          <Box sx={{ textAlign: 'center', minWidth: '100px' }}>
-            <Typography variant="h6" sx={{ fontWeight: '700', color: 'warning.main' }}>
-              {monitoringSummary.totalTasks - monitoringSummary.totalCompletedToday}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Remaining
-            </Typography>
-          </Box>
-          <Box sx={{ textAlign: 'center', minWidth: '100px' }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: 'info.main' }}>
-              {monitoringSummary.totalTasks}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Total Due
-            </Typography>
-          </Box>
-        </Box>
-      </Paper>
+          <CardContent>
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="body1" sx={{ 
+                  color: '#2c3e50', 
+                  fontWeight: 500,
+                  fontSize: '1rem'
+                }}>
+                  Progress: {monitoringSummary.totalCompletedToday} of {monitoringSummary.totalTasks} tasks completed
+                </Typography>
+                <Chip 
+                  label={`${monitoringSummary.totalTasks > 0 ? Math.round((monitoringSummary.totalCompletedToday / monitoringSummary.totalTasks) * 100) : 0}%`}
+                  sx={{ 
+                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.9rem'
+                  }}
+                />
+              </Box>
+              
+              <LinearProgress 
+                variant="determinate" 
+                value={monitoringSummary.totalTasks > 0 ? (monitoringSummary.totalCompletedToday / monitoringSummary.totalTasks) * 100 : 0}
+                sx={{ 
+                  height: 16, 
+                  borderRadius: 8,
+                  bgcolor: 'rgba(0, 0, 0, 0.1)',
+                  '& .MuiLinearProgress-bar': {
+                    borderRadius: 8,
+                    background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                    boxShadow: '0 2px 8px rgba(76, 175, 80, 0.4)'
+                  }
+                }}
+              />
+            </Box>
+            
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ justifyContent: 'center' }}>
+              <Box sx={{ 
+                textAlign: 'center', 
+                p: 2, 
+                borderRadius: 2,
+                background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05))',
+                border: '1px solid rgba(76, 175, 80, 0.2)',
+                minWidth: '120px'
+              }}>
+                <CheckCircle sx={{ color: '#4CAF50', fontSize: 32, mb: 1 }} />
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#4CAF50', mb: 0.5 }}>
+                  {monitoringSummary.totalCompletedToday}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#2c3e50', fontWeight: 500 }}>
+                  Completed
+                </Typography>
+              </Box>
+              
+              <Box sx={{ 
+                textAlign: 'center', 
+                p: 2, 
+                borderRadius: 2,
+                background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 152, 0, 0.05))',
+                border: '1px solid rgba(255, 152, 0, 0.2)',
+                minWidth: '120px'
+              }}>
+                <Schedule sx={{ color: '#FF9800', fontSize: 32, mb: 1 }} />
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#FF9800', mb: 0.5 }}>
+                  {monitoringSummary.totalTasks - monitoringSummary.totalCompletedToday}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#2c3e50', fontWeight: 500 }}>
+                  Remaining
+                </Typography>
+              </Box>
+              
+              <Box sx={{ 
+                textAlign: 'center', 
+                p: 2, 
+                borderRadius: 2,
+                background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(33, 150, 243, 0.05))',
+                border: '1px solid rgba(33, 150, 243, 0.2)',
+                minWidth: '120px'
+              }}>
+                <Assignment sx={{ color: '#2196F3', fontSize: 32, mb: 1 }} />
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#2196F3', mb: 0.5 }}>
+                  {monitoringSummary.totalTasks}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#2c3e50', fontWeight: 500 }}>
+                  Total Due
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Fade>
 
 
 
 
 
-      {/* Welcome Message */}
-      <Paper sx={{ p: 3, bgcolor: 'grey.50' }}>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-          Welcome to the overview dashboard. This page provides a high-level summary of today's monitoring planning tasks.
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          The summary cards above show today's task counts and completion status. The total sum ({monitoringSummary.totalTasks}) represents 
-          all tasks due today across daily, weekly, monthly, yearly, and one-time frequencies. 
-          Use this overview to quickly assess today's workload and completion progress.
-        </Typography>
-      </Paper>
+      {/* Modern Welcome Message */}
+      <Fade in timeout={1000}>
+        <Card sx={{ 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <CardContent sx={{ p: 4 }}>
+            <Box sx={{ textAlign: 'center', mb: 3 }}>
+              <Typography variant="h5" sx={{ 
+                fontWeight: 600, 
+                color: '#2c3e50',
+                mb: 2,
+                background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
+                📊 Dashboard Overview
+              </Typography>
+            </Box>
+            
+            <Stack spacing={3}>
+              <Typography variant="body1" sx={{ 
+                color: '#2c3e50', 
+                fontWeight: 400,
+                fontSize: '1.1rem',
+                lineHeight: 1.6,
+                textAlign: 'center'
+              }}>
+                Welcome to your comprehensive monitoring dashboard. This page provides a high-level summary of today's monitoring planning tasks and completion status.
+              </Typography>
+              
+              <Box sx={{ 
+                p: 3, 
+                borderRadius: 2,
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+                border: '1px solid rgba(102, 126, 234, 0.2)'
+              }}>
+                <Typography variant="body2" sx={{ 
+                  color: '#2c3e50', 
+                  fontWeight: 500,
+                  lineHeight: 1.6,
+                  textAlign: 'center'
+                }}>
+                  The progress indicators above show today's task counts and completion status. The total sum ({monitoringSummary.totalTasks}) represents 
+                  all tasks due today across daily, weekly, monthly, yearly, and one-time frequencies. 
+                  Use this overview to quickly assess today's workload and completion progress.
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Fade>
     </Box>
   );
 }

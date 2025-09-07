@@ -18,6 +18,14 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import AddIcon from '@mui/icons-material/Add';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardHeader from '@mui/material/CardHeader';
+import Fade from '@mui/material/Fade';
+import Chip from '@mui/material/Chip';
+import BusinessIcon from '@mui/icons-material/Business';
+import PersonIcon from '@mui/icons-material/Person';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { doc, setDoc, getDoc, updateDoc, getDocs, collectionGroup } from 'firebase/firestore';
 import { db, storage, auth } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -393,42 +401,208 @@ export default function Setup() {
 
   // --- Render ---
   return (
-    <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, pt: 0, mt: 0, maxWidth: 900, mx: { xs: 1, sm: 2, md: 4 }, ml: 0 }}>
-      <Tabs value={tab} onChange={handleTabChange} sx={{ mb: 4 }}>
-        <Tab label="Company" />
-        <Tab label="Contact Person" />
-      </Tabs>
-      {tab === 0 && (
-        <Box>
-          <Typography variant="h3" sx={{ mb: 3, fontWeight: 700, color: '#222' }}>
-            Company
-          </Typography>
-          <Alert icon={<InfoOutlinedIcon fontSize="inherit" />} severity="info" sx={{ mb: 3 }}>
-            Review and edit your company information, including measurement systems and units. Add custom fields as needed.
-          </Alert>
-          <Paper sx={{ p: 3, mb: 4 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-              {!editMode && (
-                <Tooltip title="Edit">
-                  <IconButton onClick={handleEdit} color="primary">
-                    <EditIcon />
-                  </IconButton>
-                </Tooltip>
-              )}
+    <Box sx={{ 
+      p: 3, 
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      minHeight: '100vh',
+      position: 'relative'
+    }}>
+      {/* Modern Header with Glass Morphism */}
+      <Fade in timeout={600}>
+        <Card sx={{ 
+          mb: 4, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <Box sx={{ 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            p: 3,
+            textAlign: 'center'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+              <SettingsIcon sx={{ 
+                fontSize: 48, 
+                color: 'white', 
+                mr: 2,
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+              }} />
+              <Typography variant="h3" component="h1" sx={{ 
+                fontWeight: 700, 
+                color: 'white',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}>
+                Settings
+              </Typography>
             </Box>
-            <Box>
+            <Typography variant="h6" sx={{ 
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontWeight: 400,
+              textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+            }}>
+              Manage your company and contact information
+            </Typography>
+          </Box>
+        </Card>
+      </Fade>
+
+      {/* Modern Tabs */}
+      <Fade in timeout={800}>
+        <Card sx={{ 
+          mb: 4, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <Tabs 
+            value={tab} 
+            onChange={handleTabChange} 
+            sx={{ 
+              '& .MuiTab-root': {
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%)',
+                borderRadius: 2,
+                mx: 1,
+                my: 1,
+                color: '#667eea',
+                fontWeight: 600,
+                fontSize: '1.1rem',
+                textTransform: 'none',
+                minHeight: 60,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.1) 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)'
+                },
+                '&.Mui-selected': {
+                  color: 'white',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)',
+                  transform: 'translateY(-2px)'
+                }
+              },
+              '& .MuiTabs-indicator': {
+                display: 'none'
+              }
+            }}
+          >
+            <Tab 
+              icon={<BusinessIcon />} 
+              iconPosition="start" 
+              label="Company" 
+              sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}
+            />
+            <Tab 
+              icon={<PersonIcon />} 
+              iconPosition="start" 
+              label="Contact Person" 
+              sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}
+            />
+          </Tabs>
+        </Card>
+      </Fade>
+      {tab === 0 && (
+        <Fade in timeout={1000}>
+          <Card sx={{ 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <CardHeader
+              title={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <BusinessIcon sx={{ color: '#667eea', fontSize: 28 }} />
+                  <Typography variant="h5" sx={{ 
+                    fontWeight: 600, 
+                    color: '#2c3e50',
+                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}>
+                    Company Information
+                  </Typography>
+                </Box>
+              }
+              action={
+                !editMode && (
+                  <Button
+                    variant="contained"
+                    startIcon={<EditIcon />}
+                    onClick={handleEdit}
+                    sx={{
+                      background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                      '&:hover': {
+                        background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)'
+                      },
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    Edit
+                  </Button>
+                )
+              }
+            />
+            <CardContent>
+              <Alert 
+                icon={<InfoOutlinedIcon fontSize="inherit" />} 
+                severity="info" 
+                sx={{ 
+                  mb: 3,
+                  background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(25, 118, 210, 0.05))',
+                  border: '1px solid rgba(33, 150, 243, 0.2)',
+                  borderRadius: 2,
+                  '& .MuiAlert-icon': {
+                    color: '#2196F3'
+                  }
+                }}
+              >
+                Review and edit your company information, including measurement systems and units. Add custom fields as needed.
+              </Alert>
+              <Box>
               {/* Render non-deletable fields */}
               {companyFields.filter(f => !dynamicFields.find(df => df.key === f.key)).map(({ key, label, required, tooltip, type, options }: any) => (
-                <Box key={key} sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+                <Box key={key} sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  mb: 3, 
+                  flexWrap: 'wrap',
+                  p: 2,
+                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.02))',
+                  borderRadius: 2,
+                  border: '1px solid rgba(102, 126, 234, 0.1)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.04))',
+                    border: '1px solid rgba(102, 126, 234, 0.2)',
+                    transition: 'all 0.3s ease'
+                  }
+                }}>
                   <Box sx={{ width: { xs: '100%', sm: '40%', md: '32%' }, minWidth: 120, pr: 2, display: 'flex', alignItems: 'center' }}>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>{label}{required && ' *'}</Typography>
+                    <Typography variant="body1" sx={{ 
+                      fontWeight: 600, 
+                      color: '#2c3e50',
+                      fontSize: '1rem'
+                    }}>
+                      {label}{required && <span style={{ color: '#f44336' }}> *</span>}
+                    </Typography>
                     {tooltip && (
                       <Tooltip title={tooltip} placement="top">
-                        <InfoOutlinedIcon sx={{ fontSize: 18, color: '#888', ml: 1 }} />
+                        <InfoOutlinedIcon sx={{ fontSize: 18, color: '#667eea', ml: 1 }} />
                       </Tooltip>
                     )}
                   </Box>
-                                      <Box sx={{ flex: 1, minWidth: 180 }}>
+                  <Box sx={{ flex: 1, minWidth: 180 }}>
                       {editMode ? (
                         type === 'select' ? (
                           <FormControl fullWidth size="small">
@@ -458,7 +632,11 @@ export default function Setup() {
                           />
                         )
                       ) : (
-                        <Typography variant="body1" sx={{ color: company[key] ? '#222' : '#aaa' }}>
+                        <Typography variant="body1" sx={{ 
+                          color: company[key] ? '#2c3e50' : '#aaa',
+                          fontWeight: company[key] ? 500 : 400,
+                          fontSize: '1rem'
+                        }}>
                           {type === 'select' && options ? 
                             options.find((opt: any) => opt.value === company[key])?.label || company[key] || <span style={{ color: '#aaa' }}>-</span>
                             : company[key] || <span style={{ color: '#aaa' }}>-</span>
@@ -470,7 +648,21 @@ export default function Setup() {
               ))}
               {/* Render dynamic (custom) fields */}
               {dynamicFields.map(({ key, label, tooltip }: any) => (
-                <Box key={key} sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+                <Box key={key} sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  mb: 3, 
+                  flexWrap: 'wrap',
+                  p: 2,
+                  background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.05), rgba(245, 124, 0, 0.02))',
+                  borderRadius: 2,
+                  border: '1px solid rgba(255, 152, 0, 0.1)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.08), rgba(245, 124, 0, 0.04))',
+                    border: '1px solid rgba(255, 152, 0, 0.2)',
+                    transition: 'all 0.3s ease'
+                  }
+                }}>
                   <Box sx={{ width: { xs: '100%', sm: '40%', md: '32%' }, minWidth: 120, pr: 2, display: 'flex', alignItems: 'center' }}>
                     {key.startsWith('custom_') && editMode ? (
                       <TextField
@@ -481,11 +673,17 @@ export default function Setup() {
                         sx={{ mr: 1 }}
                       />
                     ) : (
-                      <Typography variant="body1" sx={{ fontWeight: 500 }}>{label}</Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 600, 
+                        color: '#2c3e50',
+                        fontSize: '1rem'
+                      }}>
+                        {label}
+                      </Typography>
                     )}
                     {tooltip && (
                       <Tooltip title={tooltip} placement="top">
-                        <InfoOutlinedIcon sx={{ fontSize: 18, color: '#888', ml: 1 }} />
+                        <InfoOutlinedIcon sx={{ fontSize: 18, color: '#FF9800', ml: 1 }} />
                       </Tooltip>
                     )}
                   </Box>
@@ -499,13 +697,27 @@ export default function Setup() {
                         placeholder={label}
                       />
                     ) : (
-                      <Typography variant="body1" sx={{ color: company[key] ? '#222' : '#aaa' }}>
+                      <Typography variant="body1" sx={{ 
+                        color: company[key] ? '#2c3e50' : '#aaa',
+                        fontWeight: company[key] ? 500 : 400,
+                        fontSize: '1rem'
+                      }}>
                         {company[key] || <span style={{ color: '#aaa' }}>-</span>}
                       </Typography>
                     )}
                     {editMode && (
                       <Tooltip title="Delete field">
-                        <IconButton onClick={() => handleRemoveField(key)} size="small" color="error">
+                        <IconButton 
+                          onClick={() => handleRemoveField(key)} 
+                          size="small" 
+                          sx={{ 
+                            color: '#f44336',
+                            '&:hover': { 
+                              background: 'rgba(244, 67, 54, 0.1)',
+                              transform: 'scale(1.1)'
+                            }
+                          }}
+                        >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -514,9 +726,29 @@ export default function Setup() {
                 </Box>
               ))}
               {/* Company Logo upload row */}
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                mb: 3, 
+                flexWrap: 'wrap',
+                p: 2,
+                background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.05), rgba(25, 118, 210, 0.02))',
+                borderRadius: 2,
+                border: '1px solid rgba(33, 150, 243, 0.1)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.08), rgba(25, 118, 210, 0.04))',
+                  border: '1px solid rgba(33, 150, 243, 0.2)',
+                  transition: 'all 0.3s ease'
+                }
+              }}>
                 <Box sx={{ width: { xs: '100%', sm: '40%', md: '32%' }, minWidth: 120, pr: 2, display: 'flex', alignItems: 'center' }}>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>LOGO</Typography>
+                  <Typography variant="body1" sx={{ 
+                    fontWeight: 600, 
+                    color: '#2c3e50',
+                    fontSize: '1rem'
+                  }}>
+                    LOGO
+                  </Typography>
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                   <input
@@ -527,163 +759,417 @@ export default function Setup() {
                     onChange={handleLogoUpload}
                   />
                   <label htmlFor="company-logo-upload">
-                    <IconButton color="primary" component="span" disabled={logoUploadLoading}>
+                    <IconButton 
+                      color="primary" 
+                      component="span" 
+                      disabled={logoUploadLoading}
+                      sx={{
+                        background: 'linear-gradient(45deg, #2196F3, #1976D2)',
+                        color: 'white',
+                        '&:hover': {
+                          background: 'linear-gradient(45deg, #1976D2, #1565C0)',
+                          transform: 'scale(1.1)'
+                        },
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
                       <CloudUploadIcon />
                     </IconButton>
                   </label>
                   {logoUploadLoading && (
-                    <Typography sx={{ color: '#1976d2', ml: 2, fontWeight: 500 }}>Uploading...</Typography>
+                    <Typography sx={{ color: '#2196F3', ml: 2, fontWeight: 500 }}>Uploading...</Typography>
                   )}
                   {logoUploadSuccess && !logoUploadLoading && !logoUploadError && (
-                    <Typography sx={{ color: 'green', ml: 2, fontWeight: 500 }}>Logo uploaded!</Typography>
+                    <Typography sx={{ color: '#4CAF50', ml: 2, fontWeight: 500 }}>Logo uploaded!</Typography>
                   )}
                   {logoUploadError && (
-                    <Typography sx={{ color: 'red', ml: 2, fontWeight: 500 }}>{logoUploadError}</Typography>
+                    <Typography sx={{ color: '#f44336', ml: 2, fontWeight: 500 }}>{logoUploadError}</Typography>
                   )}
                   {company.logoUrl && (
-                    <img src={company.logoUrl} alt="Company Logo" style={{ height: 40, marginLeft: 16, borderRadius: 4 }} />
+                    <img 
+                      src={company.logoUrl} 
+                      alt="Company Logo" 
+                      style={{ 
+                        height: 40, 
+                        marginLeft: 16, 
+                        borderRadius: 8,
+                        border: '2px solid rgba(33, 150, 243, 0.2)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }} 
+                    />
                   )}
                 </Box>
               </Box>
               {/* Add custom field button */}
               {editMode && (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
-                  <Tooltip title="Add More">
-                    <IconButton color="primary" onClick={handleAddField} sx={{ width: 56, height: 56 }}>
+                  <Tooltip title="Add Custom Field">
+                    <IconButton 
+                      onClick={handleAddField} 
+                      sx={{ 
+                        width: 56, 
+                        height: 56,
+                        background: 'linear-gradient(45deg, #FF9800, #F57C00)',
+                        color: 'white',
+                        '&:hover': {
+                          background: 'linear-gradient(45deg, #F57C00, #E65100)',
+                          transform: 'scale(1.1)',
+                          boxShadow: '0 6px 20px rgba(255, 152, 0, 0.4)'
+                        },
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
                       <AddIcon sx={{ fontSize: 36 }} />
                     </IconButton>
                   </Tooltip>
                 </Box>
               )}
-            </Box>
-            {editMode ? (
-              <Box sx={{ display: 'flex', gap: 2, mt: 4, justifyContent: 'flex-end' }}>
-                <Button onClick={handleCancel}>Cancel</Button>
-                <Button onClick={handleSave} variant="contained">Save</Button>
               </Box>
-            ) : null}
-          </Paper>
-        </Box>
+              {editMode ? (
+                <Box sx={{ display: 'flex', gap: 2, mt: 4, justifyContent: 'flex-end', p: 2 }}>
+                  <Button 
+                    onClick={handleCancel}
+                    sx={{ 
+                      color: '#667eea',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      px: 3,
+                      py: 1
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleSave} 
+                    variant="contained"
+                    sx={{
+                      background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                      '&:hover': {
+                        background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)'
+                      },
+                      transition: 'all 0.3s ease',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      px: 3,
+                      py: 1
+                    }}
+                  >
+                    Save Changes
+                  </Button>
+                </Box>
+              ) : null}
+            </CardContent>
+          </Card>
+        </Fade>
       )}
       {tab === 1 && (
-        <Box>
-          <Typography variant="h3" sx={{ mb: 3, fontWeight: 700, color: '#222' }}>
-            Contact Person
-          </Typography>
-          <Alert icon={<InfoOutlinedIcon fontSize="inherit" />} severity="info" sx={{ mb: 3 }}>
-            Review and edit your business unit information. Add custom fields as needed.
-          </Alert>
-          <Paper sx={{ p: 3, mb: 4 }}>
-            <Box>
-              {buFields.filter(f => !dynamicBuFields.find(df => df.key === f.key)).map(({ key, label, required, tooltip }: any) => (
-                <Box key={key} sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
-                  <Box sx={{ width: { xs: '100%', sm: '40%', md: '32%' }, minWidth: 120, pr: 2, display: 'flex', alignItems: 'center' }}>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>{label}{required && ' *'}</Typography>
-                    {tooltip && (
-                      <Tooltip title={tooltip} placement="top">
-                        <InfoOutlinedIcon sx={{ fontSize: 18, color: '#888', ml: 1 }} />
-                      </Tooltip>
-                    )}
-                  </Box>
-                  <Box sx={{ flex: 1, minWidth: 180 }}>
-                    {buEditMode ? (
-                      <TextField
-                        size="small"
-                        fullWidth
-                        value={buEditValues[key] || ''}
-                        onChange={e => handleBuFieldChange(key, e.target.value)}
-                        required={!!required}
-                        placeholder={label}
-                      />
-                    ) : (
-                      <Typography variant="body1" sx={{ color: businessUnit[key] ? '#222' : '#aaa' }}>
-                        {businessUnit[key] || <span style={{ color: '#aaa' }}>-</span>}
+        <Fade in timeout={1200}>
+          <Card sx={{ 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <CardHeader
+              title={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <PersonIcon sx={{ color: '#FF9800', fontSize: 28 }} />
+                  <Typography variant="h5" sx={{ 
+                    fontWeight: 600, 
+                    color: '#2c3e50',
+                    background: 'linear-gradient(45deg, #FF9800, #F57C00)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}>
+                    Contact Person Information
+                  </Typography>
+                </Box>
+              }
+              action={
+                !buEditMode && (
+                  <Button
+                    variant="contained"
+                    startIcon={<EditIcon />}
+                    onClick={handleBuEdit}
+                    sx={{
+                      background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                      '&:hover': {
+                        background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)'
+                      },
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    Edit
+                  </Button>
+                )
+              }
+            />
+            <CardContent>
+              <Alert 
+                icon={<InfoOutlinedIcon fontSize="inherit" />} 
+                severity="info" 
+                sx={{ 
+                  mb: 3,
+                  background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(245, 124, 0, 0.05))',
+                  border: '1px solid rgba(255, 152, 0, 0.2)',
+                  borderRadius: 2,
+                  '& .MuiAlert-icon': {
+                    color: '#FF9800'
+                  }
+                }}
+              >
+                Review and edit your business unit information. Add custom fields as needed.
+              </Alert>
+              <Box>
+                {buFields.filter(f => !dynamicBuFields.find(df => df.key === f.key)).map(({ key, label, required, tooltip }: any) => (
+                  <Box key={key} sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    mb: 3, 
+                    flexWrap: 'wrap',
+                    p: 2,
+                    background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.05), rgba(245, 124, 0, 0.02))',
+                    borderRadius: 2,
+                    border: '1px solid rgba(255, 152, 0, 0.1)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.08), rgba(245, 124, 0, 0.04))',
+                      border: '1px solid rgba(255, 152, 0, 0.2)',
+                      transition: 'all 0.3s ease'
+                    }
+                  }}>
+                    <Box sx={{ width: { xs: '100%', sm: '40%', md: '32%' }, minWidth: 120, pr: 2, display: 'flex', alignItems: 'center' }}>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 600, 
+                        color: '#2c3e50',
+                        fontSize: '1rem'
+                      }}>
+                        {label}{required && <span style={{ color: '#f44336' }}> *</span>}
                       </Typography>
-                    )}
+                      {tooltip && (
+                        <Tooltip title={tooltip} placement="top">
+                          <InfoOutlinedIcon sx={{ fontSize: 18, color: '#FF9800', ml: 1 }} />
+                        </Tooltip>
+                      )}
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 180 }}>
+                      {buEditMode ? (
+                        <TextField
+                          size="small"
+                          fullWidth
+                          value={buEditValues[key] || ''}
+                          onChange={e => handleBuFieldChange(key, e.target.value)}
+                          required={!!required}
+                          placeholder={label}
+                        />
+                      ) : (
+                        <Typography variant="body1" sx={{ 
+                          color: businessUnit[key] ? '#2c3e50' : '#aaa',
+                          fontWeight: businessUnit[key] ? 500 : 400,
+                          fontSize: '1rem'
+                        }}>
+                          {businessUnit[key] || <span style={{ color: '#aaa' }}>-</span>}
+                        </Typography>
+                      )}
+                    </Box>
                   </Box>
-                </Box>
-              ))}
-              {dynamicBuFields.map(({ key, label, tooltip }: any) => (
-                <Box key={key} sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
-                  <Box sx={{ width: { xs: '100%', sm: '40%', md: '32%' }, minWidth: 120, pr: 2, display: 'flex', alignItems: 'center' }}>
-                    {key.startsWith('custom_bu_') && buEditMode ? (
-                      <TextField
-                        size="small"
-                        value={label}
-                        onChange={e => handleCustomBuLabelChange(key, e.target.value)}
-                        placeholder="Field name"
-                        sx={{ mr: 1 }}
-                      />
-                    ) : (
-                      <Typography variant="body1" sx={{ fontWeight: 500 }}>{label}</Typography>
-                    )}
-                    {tooltip && (
-                      <Tooltip title={tooltip} placement="top">
-                        <InfoOutlinedIcon sx={{ fontSize: 18, color: '#888', ml: 1 }} />
-                      </Tooltip>
-                    )}
+                ))}
+                {dynamicBuFields.map(({ key, label, tooltip }: any) => (
+                  <Box key={key} sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    mb: 3, 
+                    flexWrap: 'wrap',
+                    p: 2,
+                    background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.05), rgba(25, 118, 210, 0.02))',
+                    borderRadius: 2,
+                    border: '1px solid rgba(33, 150, 243, 0.1)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.08), rgba(25, 118, 210, 0.04))',
+                      border: '1px solid rgba(33, 150, 243, 0.2)',
+                      transition: 'all 0.3s ease'
+                    }
+                  }}>
+                    <Box sx={{ width: { xs: '100%', sm: '40%', md: '32%' }, minWidth: 120, pr: 2, display: 'flex', alignItems: 'center' }}>
+                      {key.startsWith('custom_bu_') && buEditMode ? (
+                        <TextField
+                          size="small"
+                          value={label}
+                          onChange={e => handleCustomBuLabelChange(key, e.target.value)}
+                          placeholder="Field name"
+                          sx={{ mr: 1 }}
+                        />
+                      ) : (
+                        <Typography variant="body1" sx={{ 
+                          fontWeight: 600, 
+                          color: '#2c3e50',
+                          fontSize: '1rem'
+                        }}>
+                          {label}
+                        </Typography>
+                      )}
+                      {tooltip && (
+                        <Tooltip title={tooltip} placement="top">
+                          <InfoOutlinedIcon sx={{ fontSize: 18, color: '#2196F3', ml: 1 }} />
+                        </Tooltip>
+                      )}
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 180, display: 'flex', alignItems: 'center' }}>
+                      {buEditMode ? (
+                        <TextField
+                          size="small"
+                          fullWidth
+                          value={buEditValues[key] || ''}
+                          onChange={e => handleBuFieldChange(key, e.target.value)}
+                          placeholder={label}
+                        />
+                      ) : (
+                        <Typography variant="body1" sx={{ 
+                          color: businessUnit[key] ? '#2c3e50' : '#aaa',
+                          fontWeight: businessUnit[key] ? 500 : 400,
+                          fontSize: '1rem'
+                        }}>
+                          {businessUnit[key] || <span style={{ color: '#aaa' }}>-</span>}
+                        </Typography>
+                      )}
+                      {buEditMode && (
+                        <Tooltip title="Delete field">
+                          <IconButton 
+                            onClick={() => handleRemoveBuField(key)} 
+                            size="small" 
+                            sx={{ 
+                              color: '#f44336',
+                              '&:hover': { 
+                                background: 'rgba(244, 67, 54, 0.1)',
+                                transform: 'scale(1.1)'
+                              }
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
                   </Box>
-                  <Box sx={{ flex: 1, minWidth: 180, display: 'flex', alignItems: 'center' }}>
-                    {buEditMode ? (
-                      <TextField
-                        size="small"
-                        fullWidth
-                        value={buEditValues[key] || ''}
-                        onChange={e => handleBuFieldChange(key, e.target.value)}
-                        placeholder={label}
-                      />
-                    ) : (
-                      <Typography variant="body1" sx={{ color: businessUnit[key] ? '#222' : '#aaa' }}>
-                        {businessUnit[key] || <span style={{ color: '#aaa' }}>-</span>}
-                      </Typography>
-                    )}
-                    {buEditMode && (
-                      <Tooltip title="Delete field">
-                        <IconButton onClick={() => handleRemoveBuField(key)} size="small" color="error">
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
+                ))}
+                {buEditMode && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
+                    <Tooltip title="Add Custom Field">
+                      <IconButton 
+                        onClick={handleAddBuField}
+                        sx={{ 
+                          width: 56, 
+                          height: 56,
+                          background: 'linear-gradient(45deg, #2196F3, #1976D2)',
+                          color: 'white',
+                          '&:hover': {
+                            background: 'linear-gradient(45deg, #1976D2, #1565C0)',
+                            transform: 'scale(1.1)',
+                            boxShadow: '0 6px 20px rgba(33, 150, 243, 0.4)'
+                          },
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        <AddIcon sx={{ fontSize: 36 }} />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
-                </Box>
-              ))}
-              {buEditMode && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
-                  <Tooltip title="Add More">
-                    <IconButton color="primary" onClick={handleAddBuField}>
-                      <AddIcon />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              )}
-            </Box>
-            {buEditMode ? (
-              <Box sx={{ display: 'flex', gap: 2, mt: 4, justifyContent: 'flex-end' }}>
-                <Button onClick={handleBuCancel}>Cancel</Button>
-                <Button onClick={handleBuSave} variant="contained">Save</Button>
+                )}
               </Box>
-            ) : (
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
-                <Button
-                  variant="contained"
-                  sx={{ background: '#7be495', color: '#222', fontWeight: 600, '&:hover': { background: '#5fd68b' } }}
-                  onClick={handleBuEdit}
-                >
-                  Edit
-                </Button>
-              </Box>
-            )}
-          </Paper>
-        </Box>
+              {buEditMode ? (
+                <Box sx={{ display: 'flex', gap: 2, mt: 4, justifyContent: 'flex-end', p: 2 }}>
+                  <Button 
+                    onClick={handleBuCancel}
+                    sx={{ 
+                      color: '#FF9800',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      px: 3,
+                      py: 1
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleBuSave} 
+                    variant="contained"
+                    sx={{
+                      background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                      '&:hover': {
+                        background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)'
+                      },
+                      transition: 'all 0.3s ease',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      px: 3,
+                      py: 1
+                    }}
+                  >
+                    Save Changes
+                  </Button>
+                </Box>
+              ) : null}
+            </CardContent>
+          </Card>
+        </Fade>
       )}
-      {/* Alert Dialog for non-owners */}
-      <Dialog open={alertOpen} onClose={() => setAlertOpen(false)}>
-        <DialogTitle>Permission Denied</DialogTitle>
-        <DialogContent>
-          <Typography>You do not have permission to edit company details. Only the owner can edit this information.</Typography>
+      {/* Modern Alert Dialog for non-owners */}
+      <Dialog 
+        open={alertOpen} 
+        onClose={() => setAlertOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+          color: 'white',
+          textAlign: 'center',
+          fontWeight: 600
+        }}>
+          Permission Denied
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Typography sx={{ 
+            color: '#2c3e50',
+            fontSize: '1.1rem',
+            textAlign: 'center'
+          }}>
+            You do not have permission to edit company details. Only the owner can edit this information.
+          </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAlertOpen(false)} color="primary">OK</Button>
+        <DialogActions sx={{ p: 3, justifyContent: 'center' }}>
+          <Button 
+            onClick={() => setAlertOpen(false)} 
+            variant="contained"
+            sx={{
+              background: 'linear-gradient(45deg, #f44336, #d32f2f)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #d32f2f, #c62828)',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 4px 12px rgba(244, 67, 54, 0.4)'
+              },
+              transition: 'all 0.3s ease',
+              fontWeight: 600,
+              px: 4,
+              py: 1
+            }}
+          >
+            OK
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

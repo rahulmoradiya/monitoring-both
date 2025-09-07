@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Box, Typography, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconButton, Select, MenuItem, FormControl, InputLabel, Chip, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, Tabs, Tab
+  Box, Typography, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconButton, Select, MenuItem, FormControl, InputLabel, Chip, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, Tabs, Tab, Card, CardContent, CardHeader, Fade, Stack, CircularProgress, Switch
 } from '@mui/material';
-import { Edit, Delete, FilterList, Add, CheckCircle, Cancel } from '@mui/icons-material';
+import { Edit, Delete, FilterList, Add, CheckCircle, Cancel, Monitor, Person } from '@mui/icons-material';
 import { db, auth } from '../firebase';
 import { collection, getDocs, collectionGroup, doc, deleteDoc, addDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
@@ -54,6 +54,8 @@ export default function Tasks() {
   const [filterPriority, setFilterPriority] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [filterUser, setFilterUser] = useState('');
+  const [filterDepartment, setFilterDepartment] = useState('');
+  const [filterVersion, setFilterVersion] = useState('');
   const [roles, setRoles] = useState<string[]>([]);
   const [users, setUsers] = useState<{ uid: string; name: string }[]>([]);
   const [companyCode, setCompanyCode] = useState<string>('');
@@ -210,6 +212,39 @@ export default function Tasks() {
   const handleCancelDelete = () => {
     setDeleteDialogOpen(false);
     setTaskToDelete(null);
+  };
+
+  // Toggle status function for monitoring tasks
+  const handleStatusToggle = async (taskId: string, currentStatus: string) => {
+    if (!companyCode) return;
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    try {
+      // Find the task to determine which collection to update
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      
+      const collectionName = getCollectionName(task);
+      await updateDoc(doc(db, 'companies', companyCode, collectionName, taskId), {
+        status: newStatus
+      });
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    } catch (error) {
+      console.error('Error updating task status:', error);
+    }
+  };
+
+  // Toggle status function for team member tasks
+  const handleTeamMemberStatusToggle = async (taskId: string, currentStatus: string) => {
+    if (!companyCode) return;
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    try {
+      await updateDoc(doc(db, 'companies', companyCode, 'teamMemberTasks', taskId), {
+        status: newStatus
+      });
+      setTeamMemberTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    } catch (error) {
+      console.error('Error updating team member task status:', error);
+    }
   };
 
   // Create/Edit logic
@@ -499,73 +534,340 @@ export default function Tasks() {
   }, [companyCode]);
 
   return (
-    <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 4 }}>
-      <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>Monitoring Task Management</Typography>
-      <Tabs value={activeTab} onChange={(_e, v) => setActiveTab(v)} sx={{ mb: 2 }}>
-        <Tab label="Monitoring Tasks" value="monitoring" />
-        <Tab label="Team Member Tasks" value="teamMember" />
-      </Tabs>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
-        {canEdit && activeTab === 'monitoring' && (
-          <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenDialog()} sx={{ mr: 2 }}>Assign Monitoring Task</Button>
-        )}
-        {canEdit && activeTab === 'teamMember' && (
-          <Button variant="contained" startIcon={<Add />} onClick={handleOpenAssignTeamMember}>Assign to Team Member</Button>
-        )}
-      </Box>
-      <Paper sx={{ p: 2, mb: 3 }}>
+    <Box sx={{ 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      p: 3
+    }}>
+      <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+        {/* Modern Header */}
+        <Fade in timeout={600}>
+          <Card sx={{ 
+            mb: 4,
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <Box sx={{ 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              p: 4,
+              textAlign: 'center'
+            }}>
+              <Typography variant="h3" sx={{ 
+                fontWeight: 700, 
+                color: 'white',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                mb: 1
+              }}>
+                Monitoring Task Management
+              </Typography>
+              <Typography variant="h6" sx={{ 
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontWeight: 400,
+                textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+              }}>
+                Manage and track all your monitoring and team member tasks
+              </Typography>
+            </Box>
+          </Card>
+        </Fade>
+        {/* Modern Tabs with Action Buttons */}
+        <Fade in timeout={800}>
+          <Card sx={{ 
+            mb: 4, 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+          }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              p: 2
+            }}>
+              <Tabs 
+                value={activeTab} 
+                onChange={(_e, v) => setActiveTab(v)} 
+                sx={{ 
+                  '& .MuiTabs-indicator': {
+                    display: 'none'
+                  },
+                  '& .MuiTab-root': {
+                    background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.02) 100%)',
+                    borderRadius: 3,
+                    mx: 0.5,
+                    my: 1,
+                    px: 3,
+                    py: 1.5,
+                    color: '#667eea',
+                    fontWeight: 600,
+                    fontSize: '0.95rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    border: '1px solid rgba(102, 126, 234, 0.1)',
+                    boxShadow: '0 2px 8px rgba(102, 126, 234, 0.1)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.08) 100%)',
+                      border: '1px solid rgba(102, 126, 234, 0.2)',
+                      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)',
+                      transform: 'translateY(-1px)'
+                    }
+                  },
+                  '& .Mui-selected': {
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    boxShadow: '0 6px 20px rgba(102, 126, 234, 0.4)',
+                    transform: 'translateY(-2px)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                      boxShadow: '0 8px 24px rgba(102, 126, 234, 0.5)',
+                      transform: 'translateY(-3px)'
+                    }
+                  }
+                }}
+              >
+                <Tab 
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Monitor sx={{ fontSize: '1.2rem' }} />
+                      <span>Monitoring Tasks</span>
+                    </Box>
+                  } 
+                  value="monitoring" 
+                />
+                <Tab 
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Person sx={{ fontSize: '1.2rem' }} />
+                      <span>Team Member Tasks</span>
+                    </Box>
+                  } 
+                  value="teamMember" 
+                />
+              </Tabs>
+              
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                {canEdit && activeTab === 'monitoring' && (
+                  <Button 
+                    variant="contained" 
+                    startIcon={<Add />} 
+                    onClick={() => handleOpenDialog()} 
+                    sx={{ 
+                      background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                      borderRadius: 3,
+                      px: 4,
+                      py: 1.5,
+                      fontWeight: 600,
+                      boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #45a049 0%, #3d8b40 100%)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 8px 24px rgba(76, 175, 80, 0.4)',
+                      },
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    Assign Monitoring Task
+                  </Button>
+                )}
+                {canEdit && activeTab === 'teamMember' && (
+                  <Button 
+                    variant="contained" 
+                    startIcon={<Add />} 
+                    onClick={handleOpenAssignTeamMember}
+                    sx={{ 
+                      background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                      borderRadius: 3,
+                      px: 4,
+                      py: 1.5,
+                      fontWeight: 600,
+                      boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #45a049 0%, #3d8b40 100%)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 8px 24px rgba(76, 175, 80, 0.4)',
+                      },
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    Assign to Team Member
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          </Card>
+        </Fade>
+        
+        {/* Additional Filter Section */}
+        <Fade in timeout={1000}>
+          <Card sx={{ 
+            mb: 4,
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+          }}>
+            <CardHeader 
+              sx={{ 
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+                borderBottom: '1px solid rgba(102, 126, 234, 0.1)'
+              }}
+              title={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <FilterList sx={{ color: '#667eea' }} />
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600,
+                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}>
+                    Advanced Filters & Search
+                  </Typography>
+                </Box>
+              }
+            />
+            <CardContent sx={{ p: 3 }}>
+              {activeTab === 'monitoring' ? (
+                <Box sx={{ 
+                  display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', justifyContent: 'space-between'
+                }}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                    <FormControl sx={{ minWidth: 120 }}>
+                      <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Type</InputLabel>
+                      <Select value={filterType} label="Type" onChange={e => setFilterType(e.target.value)} sx={{'& .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.3)'},'&:hover .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.5)'},'&.Mui-focused .MuiOutlinedInput-notchedOutline':{borderColor:'#667eea'}}}>
+                        <MenuItem value=""><em>All</em></MenuItem>
+                        {types.map(t => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                    <FormControl sx={{ minWidth: 120 }}>
+                      <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Status</InputLabel>
+                      <Select value={filterStatus} label="Status" onChange={e => setFilterStatus(e.target.value)} sx={{'& .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.3)'},'&:hover .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.5)'},'&.Mui-focused .MuiOutlinedInput-notchedOutline':{borderColor:'#667eea'}}}>
+                        <MenuItem value=""><em>All</em></MenuItem>
+                        <MenuItem value="active">Active</MenuItem>
+                        <MenuItem value="completed">Completed</MenuItem>
+                        <MenuItem value="inactive">Inactive</MenuItem>
+                        <MenuItem value="overdue">Overdue</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <FormControl sx={{ minWidth: 120 }}>
+                      <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Priority</InputLabel>
+                      <Select value={filterPriority} label="Priority" onChange={e => setFilterPriority(e.target.value)} sx={{'& .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.3)'},'&:hover .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.5)'},'&.Mui-focused .MuiOutlinedInput-notchedOutline':{borderColor:'#667eea'}}}>
+                        <MenuItem value=""><em>All</em></MenuItem>
+                        <MenuItem value="Low">Low</MenuItem>
+                        <MenuItem value="Medium">Medium</MenuItem>
+                        <MenuItem value="High">High</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <FormControl sx={{ minWidth: 120 }}>
+                      <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Role</InputLabel>
+                      <Select value={filterRole} label="Role" onChange={e => setFilterRole(e.target.value)} sx={{'& .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.3)'}}}>
+                        <MenuItem value=""><em>All</em></MenuItem>
+                        {roles.map(role => <MenuItem key={role} value={role}>{role}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                    <FormControl sx={{ minWidth: 120 }}>
+                      <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>User</InputLabel>
+                      <Select value={filterUser} label="User" onChange={e => setFilterUser(e.target.value)} sx={{'& .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.3)'}}}>
+                        <MenuItem value=""><em>All</em></MenuItem>
+                        {users.map(user => <MenuItem key={user.uid} value={user.uid}>{user.name}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                    <TextField size="medium" placeholder="Search tasks..." value={search} onChange={e => setSearch(e.target.value)} InputProps={{ startAdornment: <FilterList sx={{ mr: 1, color: '#667eea' }} /> }} sx={{ minWidth: 300 }} />
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button variant="outlined" size="small" onClick={() => { setSearch(''); setFilterType(''); setFilterStatus(''); setFilterPriority(''); setFilterRole(''); setFilterUser(''); setFilterDepartment(''); setFilterVersion(''); }} sx={{ borderColor: '#667eea', color: '#667eea' }}>Clear All</Button>
+                  </Box>
+                </Box>
+              ) : (
+                <Box sx={{ 
+                  display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', justifyContent: 'space-between'
+                }}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                    <FormControl sx={{ minWidth: 120 }}>
+                      <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Status</InputLabel>
+                      <Select value={teamFilterStatus} label="Status" onChange={e => setTeamFilterStatus(e.target.value)}>
+                        <MenuItem value=""><em>All</em></MenuItem>
+                        <MenuItem value="active">Active</MenuItem>
+                        <MenuItem value="completed">Completed</MenuItem>
+                        <MenuItem value="inactive">Inactive</MenuItem>
+                        <MenuItem value="overdue">Overdue</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <FormControl sx={{ minWidth: 120 }}>
+                      <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Priority</InputLabel>
+                      <Select value={teamFilterPriority} label="Priority" onChange={e => setTeamFilterPriority(e.target.value)}>
+                        <MenuItem value=""><em>All</em></MenuItem>
+                        <MenuItem value="Low">Low</MenuItem>
+                        <MenuItem value="Medium">Medium</MenuItem>
+                        <MenuItem value="High">High</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <FormControl sx={{ minWidth: 150 }}>
+                      <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Assigned User</InputLabel>
+                      <Select value={teamFilterUser} label="Assigned User" onChange={e => setTeamFilterUser(e.target.value)}>
+                        <MenuItem value=""><em>All</em></MenuItem>
+                        {users.map(user => <MenuItem key={user.uid} value={user.uid}>{user.name}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                    <TextField size="medium" placeholder="Filter by SOP..." value={teamFilterSOP} onChange={e => setTeamFilterSOP(e.target.value)} sx={{ minWidth: 200 }} />
+                    <TextField size="medium" placeholder="Search tasks..." value={teamSearch} onChange={e => setTeamSearch(e.target.value)} sx={{ minWidth: 300 }} />
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button variant="outlined" size="small" onClick={() => { setTeamFilterStatus(''); setTeamFilterPriority(''); setTeamFilterUser(''); setTeamFilterSOP(''); setTeamSearch(''); }} sx={{ borderColor: '#667eea', color: '#667eea' }}>Clear All</Button>
+                  </Box>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Fade>
+
+        {/* Data Tables Section */}
+        <Fade in timeout={1200}>
+          <Card sx={{ 
+            mb: 4,
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+          }}>
+            <CardContent sx={{ p: 3 }}>
         {activeTab === 'monitoring' && (
           <>
-            <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-              <FormControl sx={{ minWidth: 120 }}>
-                <InputLabel>Type</InputLabel>
-                <Select value={filterType} label="Type" onChange={e => setFilterType(e.target.value)}>
-                  <MenuItem value=""><em>All</em></MenuItem>
-                  {types.map(t => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
-                </Select>
-              </FormControl>
-              <FormControl sx={{ minWidth: 120 }}>
-                <InputLabel>Status</InputLabel>
-                <Select value={filterStatus} label="Status" onChange={e => setFilterStatus(e.target.value)}>
-                  <MenuItem value=""><em>All</em></MenuItem>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                  <MenuItem value="overdue">Overdue</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl sx={{ minWidth: 120 }}>
-                <InputLabel>Priority</InputLabel>
-                <Select value={filterPriority} label="Priority" onChange={e => setFilterPriority(e.target.value)}>
-                  <MenuItem value=""><em>All</em></MenuItem>
-                  <MenuItem value="Low">Low</MenuItem>
-                  <MenuItem value="Medium">Medium</MenuItem>
-                  <MenuItem value="High">High</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl sx={{ minWidth: 120 }}>
-                <InputLabel>Role</InputLabel>
-                <Select value={filterRole} label="Role" onChange={e => setFilterRole(e.target.value)}>
-                  <MenuItem value=""><em>All</em></MenuItem>
-                  {roles.map(role => <MenuItem key={role} value={role}>{role}</MenuItem>)}
-                </Select>
-              </FormControl>
-              <FormControl sx={{ minWidth: 120 }}>
-                <InputLabel>User</InputLabel>
-                <Select value={filterUser} label="User" onChange={e => setFilterUser(e.target.value)}>
-                  <MenuItem value=""><em>All</em></MenuItem>
-                  {users.map(user => <MenuItem key={user.uid} value={user.uid}>{user.name}</MenuItem>)}
-                </Select>
-              </FormControl>
-              <TextField
-                size="small"
-                placeholder="Search tasks..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                sx={{ minWidth: 220 }}
-              />
-            </Box>
-            <Table>
+            <Table sx={{ 
+              '& .MuiTableHead-root': {
+                '& .MuiTableRow-root': {
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  '& .MuiTableCell-head': {
+                    color: 'white',
+                    fontWeight: 700,
+                    fontSize: '0.95rem'
+                  }
+                }
+              },
+              '& .MuiTableBody-root': {
+                '& .MuiTableRow-root': {
+                  '&:nth-of-type(even)': {
+                    background: 'rgba(102, 126, 234, 0.05)'
+                  },
+                  '&:hover': {
+                    background: 'rgba(102, 126, 234, 0.1)',
+                    transform: 'scale(1.01)',
+                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)'
+                  },
+                  transition: 'all 0.3s ease'
+                }
+              }
+            }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Title</TableCell>
@@ -587,37 +889,149 @@ export default function Tasks() {
                     <TableCell>
                       <Chip 
                         label={task.taskType === 'detailed' ? 'Detailed' : task.taskType === 'checklist' ? 'Checklist' : 'Monitoring'} 
-                        color={task.taskType === 'detailed' ? 'primary' : task.taskType === 'checklist' ? 'secondary' : 'default'} 
                         size="small" 
+                        sx={{
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          color: 'white',
+                          fontWeight: 600,
+                          boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+                        }}
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip label={task.status} color={statusColors[task.status] || 'default'} size="small" />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Switch
+                          checked={task.status === 'active'}
+                          onChange={() => handleStatusToggle(task.id, task.status)}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: '#4caf50',
+                              '& + .MuiSwitch-track': {
+                                backgroundColor: '#4caf50',
+                              },
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                              backgroundColor: '#4caf50',
+                            },
+                            '& .MuiSwitch-track': {
+                              backgroundColor: '#9e9e9e',
+                            }
+                          }}
+                        />
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            color: task.status === 'active' ? '#4caf50' : '#9e9e9e',
+                            fontWeight: 600,
+                            textTransform: 'capitalize',
+                            fontSize: '0.875rem'
+                          }}
+                        >
+                          {task.status}
+                        </Typography>
+                      </Box>
                     </TableCell>
                     <TableCell>
                       <Chip 
                         label={task.priority} 
-                        color={task.priority === 'High' ? 'error' : task.priority === 'Medium' ? 'warning' : 'success'} 
                         size="small" 
+                        sx={{
+                          background: task.priority === 'High' ? 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)' :
+                                     task.priority === 'Medium' ? 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)' :
+                                     'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
+                          color: 'white',
+                          fontWeight: 600,
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        }}
                       />
                     </TableCell>
                     <TableCell>{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}</TableCell>
                     <TableCell>
-                      {task.assignedRoles?.map(role => <Chip key={role} label={role} size="small" sx={{ mr: 0.5 }} />)}
+                      {task.assignedRoles?.map(role => <Chip 
+                        key={role} 
+                        label={role} 
+                        size="small" 
+                        sx={{ 
+                          mr: 0.5,
+                          background: 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)',
+                          color: 'white',
+                          fontWeight: 600,
+                          boxShadow: '0 2px 8px rgba(156, 39, 176, 0.3)'
+                        }} 
+                      />)}
                     </TableCell>
                     <TableCell>
                       {task.assignedUsers?.map(uid => {
                         const user = users.find(u => u.uid === uid);
-                        return user ? <Chip key={uid} label={user.name} size="small" sx={{ mr: 0.5 }} /> : null;
+                        return user ? <Chip 
+                          key={uid} 
+                          label={user.name} 
+                          size="small" 
+                          sx={{ 
+                            mr: 0.5,
+                            background: 'linear-gradient(135deg, #00bcd4 0%, #0097a7 100%)',
+                            color: 'white',
+                            fontWeight: 600,
+                            boxShadow: '0 2px 8px rgba(0, 188, 212, 0.3)'
+                          }} 
+                        /> : null;
                       })}
                     </TableCell>
                     <TableCell align="right">
-                      {canEdit && (
-                        <Tooltip title="Edit"><IconButton onClick={() => handleOpenDialog(task)}><Edit /></IconButton></Tooltip>
-                      )}
-                      {canEdit && (
-                        <Tooltip title="Delete"><IconButton color="error" onClick={() => handleDeleteClick(task.id)}><Delete /></IconButton></Tooltip>
-                      )}
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                        {canEdit && (
+                          <Tooltip title="Edit">
+                            <IconButton 
+                              onClick={() => handleOpenDialog(task)}
+                              sx={{
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                color: 'white',
+                                borderRadius: 2,
+                                width: 40,
+                                height: 40,
+                                boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)',
+                                '&:hover': {
+                                  background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                                  transform: 'translateY(-2px) scale(1.05)',
+                                  boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)'
+                                },
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '& .MuiSvgIcon-root': {
+                                  fontSize: '1.2rem'
+                                }
+                              }}
+                            >
+                              <Edit />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {canEdit && (
+                          <Tooltip title="Delete">
+                            <IconButton 
+                              onClick={() => handleDeleteClick(task.id)}
+                              sx={{
+                                background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+                                color: 'white',
+                                borderRadius: 2,
+                                width: 40,
+                                height: 40,
+                                boxShadow: '0 4px 16px rgba(244, 67, 54, 0.3)',
+                                '&:hover': {
+                                  background: 'linear-gradient(135deg, #d32f2f 0%, #c62828 100%)',
+                                  transform: 'translateY(-2px) scale(1.05)',
+                                  boxShadow: '0 8px 24px rgba(244, 67, 54, 0.4)'
+                                },
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '& .MuiSvgIcon-root': {
+                                  fontSize: '1.2rem'
+                                }
+                              }}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -627,50 +1041,31 @@ export default function Tasks() {
         )}
         {activeTab === 'teamMember' && (
           <>
-            {/* Team Member Task Filters */}
-            <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
-              <FormControl sx={{ minWidth: 120 }}>
-                <InputLabel>Status</InputLabel>
-                <Select value={teamFilterStatus} label="Status" onChange={e => setTeamFilterStatus(e.target.value)}>
-                  <MenuItem value=""><em>All</em></MenuItem>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                  <MenuItem value="overdue">Overdue</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl sx={{ minWidth: 120 }}>
-                <InputLabel>Priority</InputLabel>
-                <Select value={teamFilterPriority} label="Priority" onChange={e => setTeamFilterPriority(e.target.value)}>
-                  <MenuItem value=""><em>All</em></MenuItem>
-                  <MenuItem value="Low">Low</MenuItem>
-                  <MenuItem value="Medium">Medium</MenuItem>
-                  <MenuItem value="High">High</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl sx={{ minWidth: 120 }}>
-                <InputLabel>Assigned User</InputLabel>
-                <Select value={teamFilterUser} label="Assigned User" onChange={e => setTeamFilterUser(e.target.value)}>
-                  <MenuItem value=""><em>All</em></MenuItem>
-                  {users.map(user => <MenuItem key={user.uid} value={user.uid}>{user.name}</MenuItem>)}
-                </Select>
-              </FormControl>
-              <TextField
-                size="small"
-                placeholder="Filter by SOP..."
-                value={teamFilterSOP}
-                onChange={e => setTeamFilterSOP(e.target.value)}
-                sx={{ minWidth: 150 }}
-              />
-              <TextField
-                size="small"
-                placeholder="Search tasks..."
-                value={teamSearch}
-                onChange={e => setTeamSearch(e.target.value)}
-                sx={{ minWidth: 220 }}
-              />
-            </Box>
-            <Table>
+            <Table sx={{ 
+              '& .MuiTableHead-root': {
+                '& .MuiTableRow-root': {
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  '& .MuiTableCell-head': {
+                    color: 'white',
+                    fontWeight: 700,
+                    fontSize: '0.95rem'
+                  }
+                }
+              },
+              '& .MuiTableBody-root': {
+                '& .MuiTableRow-root': {
+                  '&:nth-of-type(even)': {
+                    background: 'rgba(102, 126, 234, 0.05)'
+                  },
+                  '&:hover': {
+                    background: 'rgba(102, 126, 234, 0.1)',
+                    transform: 'scale(1.01)',
+                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)'
+                  },
+                  transition: 'all 0.3s ease'
+                }
+              }
+            }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Title</TableCell>
@@ -689,20 +1084,68 @@ export default function Tasks() {
                     <TableCell>{task.title}</TableCell>
                     <TableCell>{task.description}</TableCell>
                     <TableCell>
-                      <Chip label={task.status} color={statusColors[task.status] || 'default'} size="small" />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Switch
+                          checked={task.status === 'active'}
+                          onChange={() => handleTeamMemberStatusToggle(task.id, task.status)}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: '#4caf50',
+                              '& + .MuiSwitch-track': {
+                                backgroundColor: '#4caf50',
+                              },
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                              backgroundColor: '#4caf50',
+                            },
+                            '& .MuiSwitch-track': {
+                              backgroundColor: '#9e9e9e',
+                            }
+                          }}
+                        />
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            color: task.status === 'active' ? '#4caf50' : '#9e9e9e',
+                            fontWeight: 600,
+                            textTransform: 'capitalize',
+                            fontSize: '0.875rem'
+                          }}
+                        >
+                          {task.status}
+                        </Typography>
+                      </Box>
                     </TableCell>
                     <TableCell>
                       <Chip 
                         label={task.priority} 
-                        color={task.priority === 'High' ? 'error' : task.priority === 'Medium' ? 'warning' : 'success'} 
                         size="small" 
+                        sx={{
+                          background: task.priority === 'High' ? 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)' :
+                                     task.priority === 'Medium' ? 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)' :
+                                     'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
+                          color: 'white',
+                          fontWeight: 600,
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        }}
                       />
                     </TableCell>
                     <TableCell>{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}</TableCell>
                     <TableCell>
                       {task.assignedUserIds?.map((uid: string) => {
                         const user = users.find(u => u.uid === uid);
-                        return user ? <Chip key={uid} label={user.name} size="small" sx={{ mr: 0.5 }} /> : null;
+                        return user ? <Chip 
+                          key={uid} 
+                          label={user.name} 
+                          size="small" 
+                          sx={{ 
+                            mr: 0.5,
+                            background: 'linear-gradient(135deg, #00bcd4 0%, #0097a7 100%)',
+                            color: 'white',
+                            fontWeight: 600,
+                            boxShadow: '0 2px 8px rgba(0, 188, 212, 0.3)'
+                          }} 
+                        /> : null;
                       })}
                     </TableCell>
                     <TableCell>
@@ -711,12 +1154,60 @@ export default function Tasks() {
                       ))}
                     </TableCell>
                     <TableCell align="right">
-                      {canEdit && (
-                        <Tooltip title="Edit"><IconButton onClick={() => handleEditTeamMemberTask(task)}><Edit /></IconButton></Tooltip>
-                      )}
-                      {canEdit && (
-                        <Tooltip title="Delete"><IconButton color="error" onClick={() => handleDeleteTeamMemberTask(task.id)}><Delete /></IconButton></Tooltip>
-                      )}
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                        {canEdit && (
+                          <Tooltip title="Edit">
+                            <IconButton 
+                              onClick={() => handleEditTeamMemberTask(task)}
+                              sx={{
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                color: 'white',
+                                borderRadius: 2,
+                                width: 40,
+                                height: 40,
+                                boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)',
+                                '&:hover': {
+                                  background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                                  transform: 'translateY(-2px) scale(1.05)',
+                                  boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)'
+                                },
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '& .MuiSvgIcon-root': {
+                                  fontSize: '1.2rem'
+                                }
+                              }}
+                            >
+                              <Edit />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {canEdit && (
+                          <Tooltip title="Delete">
+                            <IconButton 
+                              onClick={() => handleDeleteTeamMemberTask(task.id)}
+                              sx={{
+                                background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+                                color: 'white',
+                                borderRadius: 2,
+                                width: 40,
+                                height: 40,
+                                boxShadow: '0 4px 16px rgba(244, 67, 54, 0.3)',
+                                '&:hover': {
+                                  background: 'linear-gradient(135deg, #d32f2f 0%, #c62828 100%)',
+                                  transform: 'translateY(-2px) scale(1.05)',
+                                  boxShadow: '0 8px 24px rgba(244, 67, 54, 0.4)'
+                                },
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '& .MuiSvgIcon-root': {
+                                  fontSize: '1.2rem'
+                                }
+                              }}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -724,7 +1215,9 @@ export default function Tasks() {
             </Table>
           </>
         )}
-      </Paper>
+            </CardContent>
+          </Card>
+        </Fade>
       {/* Create/Edit Task Dialog */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Assign Monitoring Task</DialogTitle>
@@ -1027,6 +1520,7 @@ export default function Tasks() {
           <Button onClick={handleConfirmDelete} color="error" variant="contained">Delete</Button>
         </DialogActions>
       </Dialog>
+      </Box>
     </Box>
   );
 } 

@@ -23,11 +23,21 @@ import {
   Typography,
   Divider,
   Chip,
-  Grid
+  Grid,
+  Card,
+  CardContent,
+  CardHeader,
+  Fade,
+  Stack
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import GroupsIcon from '@mui/icons-material/Groups';
+import WorkIcon from '@mui/icons-material/Work';
+import PersonIcon from '@mui/icons-material/Person';
+import BusinessIcon from '@mui/icons-material/Business';
+import SettingsIcon from '@mui/icons-material/Settings';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../firebase';
@@ -437,232 +447,761 @@ export default function Teams() {
   }, [companyCode]);
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h3" sx={{ fontWeight: 700, color: '#222' }}>
-        Teams Management
-      </Typography>
-      </Box>
+    <Box sx={{ 
+      p: 3, 
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      minHeight: '100vh',
+      position: 'relative'
+    }}>
+      {/* Modern Header with Glass Morphism */}
+      <Fade in timeout={600}>
+        <Card sx={{ 
+          mb: 4, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <Box sx={{ 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            p: 3,
+            textAlign: 'center'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+              <GroupsIcon sx={{ 
+                fontSize: 48, 
+                color: 'white', 
+                mr: 2,
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+              }} />
+              <Typography variant="h3" component="h1" sx={{ 
+                fontWeight: 700, 
+                color: 'white',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}>
+                Teams Management
+              </Typography>
+            </Box>
+            <Typography variant="h6" sx={{ 
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontWeight: 400,
+              textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+            }}>
+              Manage your team roles, members, and departments
+            </Typography>
+          </Box>
+        </Card>
+      </Fade>
 
-      {/* Roles Section */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>Roles & Responsibilities</Typography>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={handleRoleOpen}>
-            Add Role
-          </Button>
-        </Box>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Role Name</TableCell>
-                <TableCell>Responsibilities</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              <TableRow key="owner-role">
-                <TableCell>Owner</TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    <Chip label="Full access to all features and settings" size="small" variant="outlined" />
-                  </Box>
-                </TableCell>
-                <TableCell align="right">
-                  {/* No edit/delete buttons for Owner */}
-                </TableCell>
-              </TableRow>
-              {roles.map((role) => (
-                <TableRow key={role.id}>
-                  <TableCell>{role.name}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {role.responsibilities.map((resp, index) => (
-                        <Chip key={index} label={resp} size="small" variant="outlined" />
-                      ))}
-                    </Box>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Edit">
-                      <IconButton onClick={() => handleRoleEdit(role)} color="primary">
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton color="error" onClick={() => {
-                        if (userRole !== 'owner') {
-                          setAlertOpen(true);
-                        } else {
-                          handleRoleDelete(role.id);
-                        }
-                      }}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
+      {/* Modern Roles Section */}
+      <Fade in timeout={800}>
+        <Card sx={{ 
+          mb: 4, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <CardHeader
+            title={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <WorkIcon sx={{ color: '#667eea', fontSize: 28 }} />
+                <Typography variant="h5" sx={{ 
+                  fontWeight: 600, 
+                  color: '#2c3e50',
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  Roles & Responsibilities
+                </Typography>
+                <Chip 
+                  label={`${roles.length + 1} ${roles.length === 0 ? 'Role' : 'Roles'}`}
+                  sx={{ 
+                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.8rem'
+                  }}
+                />
+              </Box>
+            }
+            action={
+              <Button 
+                variant="contained" 
+                startIcon={<AddIcon />} 
+                onClick={handleRoleOpen}
+                sx={{
+                  background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)'
+                  },
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                Add Role
+              </Button>
+            }
+          />
+          <CardContent>
+            <TableContainer sx={{ 
+              borderRadius: 2,
+              overflow: 'hidden',
+              border: '1px solid rgba(102, 126, 234, 0.1)'
+            }}>
+              <Table>
+                <TableHead sx={{ 
+                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))'
+                }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600, color: '#2c3e50' }}>Role Name</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#2c3e50' }}>Responsibilities</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600, color: '#2c3e50' }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow key="owner-role" sx={{ 
+                    '&:hover': { 
+                      background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.02))' 
+                    }
+                  }}>
+                    <TableCell sx={{ fontWeight: 600, color: '#2c3e50' }}>Owner</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        <Chip 
+                          label="Full access to all features and settings" 
+                          size="small" 
+                          sx={{ 
+                            background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                            color: 'white',
+                            fontWeight: 500
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell align="right">
+                      {/* No edit/delete buttons for Owner */}
+                    </TableCell>
+                  </TableRow>
+                  {roles.map((role) => (
+                    <TableRow key={role.id} sx={{ 
+                      '&:hover': { 
+                        background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.02))' 
+                      }
+                    }}>
+                      <TableCell sx={{ fontWeight: 500, color: '#2c3e50' }}>{role.name}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {role.responsibilities.map((resp, index) => (
+                            <Chip 
+                              key={index} 
+                              label={resp} 
+                              size="small" 
+                              sx={{ 
+                                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+                                border: '1px solid rgba(102, 126, 234, 0.2)',
+                                color: '#2c3e50',
+                                fontWeight: 500
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="Edit Role">
+                          <IconButton 
+                            onClick={() => handleRoleEdit(role)} 
+                            sx={{ 
+                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              color: 'white',
+                              borderRadius: 2,
+                              width: 40,
+                              height: 40,
+                              mr: 1,
+                              boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)',
+                              '&:hover': { 
+                                background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                                transform: 'translateY(-2px) scale(1.05)',
+                                boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)'
+                              },
+                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              '& .MuiSvgIcon-root': {
+                                fontSize: '1.2rem'
+                              }
+                            }}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete Role">
+                          <IconButton 
+                            onClick={() => {
+                              if (userRole !== 'owner') {
+                                setAlertOpen(true);
+                              } else {
+                                handleRoleDelete(role.id);
+                              }
+                            }}
+                            sx={{ 
+                              background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+                              color: 'white',
+                              borderRadius: 2,
+                              width: 40,
+                              height: 40,
+                              boxShadow: '0 4px 16px rgba(244, 67, 54, 0.3)',
+                              '&:hover': { 
+                                background: 'linear-gradient(135deg, #d32f2f 0%, #c62828 100%)',
+                                transform: 'translateY(-2px) scale(1.05)',
+                                boxShadow: '0 8px 24px rgba(244, 67, 54, 0.4)'
+                              },
+                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              '& .MuiSvgIcon-root': {
+                                fontSize: '1.2rem'
+                              }
+                            }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      </Fade>
 
-      <Divider sx={{ my: 3 }} />
+      {/* Modern Team Members Section */}
+      <Fade in timeout={1000}>
+        <Card sx={{ 
+          mb: 4, 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <CardHeader
+            title={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <PersonIcon sx={{ color: '#FF9800', fontSize: 28 }} />
+                <Typography variant="h5" sx={{ 
+                  fontWeight: 600, 
+                  color: '#2c3e50',
+                  background: 'linear-gradient(45deg, #FF9800, #F57C00)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  Team Members
+                </Typography>
+                <Chip 
+                  label={`${members.length} ${members.length === 1 ? 'Member' : 'Members'}`}
+                  sx={{ 
+                    background: 'linear-gradient(45deg, #FF9800, #F57C00)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.8rem'
+                  }}
+                />
+              </Box>
+            }
+            action={
+              <Button 
+                variant="contained" 
+                startIcon={<AddIcon />} 
+                onClick={handleMemberOpen}
+                sx={{
+                  background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)'
+                  },
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                Add Member
+              </Button>
+            }
+          />
+          <CardContent>
+            <TableContainer sx={{ 
+              borderRadius: 2,
+              overflow: 'hidden',
+              border: '1px solid rgba(255, 152, 0, 0.1)'
+            }}>
+              <Table>
+                <TableHead sx={{ 
+                  background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(245, 124, 0, 0.05))'
+                }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600, color: '#2c3e50' }}>Name</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#2c3e50' }}>Email</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#2c3e50' }}>Role</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#2c3e50' }}>Responsibilities</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600, color: '#2c3e50' }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {members.map((member) => (
+                    <TableRow key={member.id} sx={{ 
+                      '&:hover': { 
+                        background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.05), rgba(245, 124, 0, 0.02))' 
+                      }
+                    }}>
+                      <TableCell sx={{ fontWeight: 500, color: '#2c3e50' }}>{member.name}</TableCell>
+                      <TableCell sx={{ color: '#2c3e50' }}>{member.email}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={member.role} 
+                          size="small" 
+                          sx={{ 
+                            background: 'linear-gradient(45deg, #FF9800, #F57C00)',
+                            color: 'white',
+                            fontWeight: 500
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {member.responsibilities.map((resp, index) => (
+                            <Chip 
+                              key={index} 
+                              label={resp} 
+                              size="small" 
+                              sx={{ 
+                                background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(245, 124, 0, 0.05))',
+                                border: '1px solid rgba(255, 152, 0, 0.2)',
+                                color: '#2c3e50',
+                                fontWeight: 500
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="Edit Member">
+                          <IconButton 
+                            onClick={() => handleMemberEdit(member)} 
+                            sx={{ 
+                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              color: 'white',
+                              borderRadius: 2,
+                              width: 40,
+                              height: 40,
+                              mr: 1,
+                              boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)',
+                              '&:hover': { 
+                                background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                                transform: 'translateY(-2px) scale(1.05)',
+                                boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)'
+                              },
+                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              '& .MuiSvgIcon-root': {
+                                fontSize: '1.2rem'
+                              }
+                            }}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        {member.role !== 'owner' && (
+                          <Tooltip title="Delete Member">
+                            <IconButton 
+                              onClick={() => {
+                                if (userRole !== 'owner') {
+                                  setAlertOpen(true);
+                                } else {
+                                  handleMemberDelete(member.id);
+                                }
+                              }}
+                              sx={{ 
+                                background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+                                color: 'white',
+                                borderRadius: 2,
+                                width: 40,
+                                height: 40,
+                                boxShadow: '0 4px 16px rgba(244, 67, 54, 0.3)',
+                                '&:hover': { 
+                                  background: 'linear-gradient(135deg, #d32f2f 0%, #c62828 100%)',
+                                  transform: 'translateY(-2px) scale(1.05)',
+                                  boxShadow: '0 8px 24px rgba(244, 67, 54, 0.4)'
+                                },
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '& .MuiSvgIcon-root': {
+                                  fontSize: '1.2rem'
+                                }
+                              }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      </Fade>
 
-      {/* Team Members Section */}
-      <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>Team Members</Typography>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={handleMemberOpen}>
-            Add Member
-          </Button>
-        </Box>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Responsibilities</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {members.map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell>{member.name}</TableCell>
-                  <TableCell>{member.email}</TableCell>
-                  <TableCell>{member.role}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {member.responsibilities.map((resp, index) => (
-                        <Chip key={index} label={resp} size="small" variant="outlined" />
-                      ))}
-                    </Box>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Edit">
-                      <IconButton onClick={() => handleMemberEdit(member)} color="primary">
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    {member.role !== 'owner' && (
-                      <Tooltip title="Delete">
-                        <IconButton color="error" onClick={() => {
-                          if (userRole !== 'owner') {
-                            setAlertOpen(true);
-                          } else {
-                            handleMemberDelete(member.id);
-                          }
-                        }}>
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-
-      {/* Departments Section */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>Departments</Typography>
-          <Button variant="contained" onClick={() => setDeptDialogOpen(true)}>
+      {/* Modern Departments Section */}
+      <Fade in timeout={1200}>
+        <Card sx={{ 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          <CardHeader
+            title={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <BusinessIcon sx={{ color: '#2196F3', fontSize: 28 }} />
+                <Typography variant="h5" sx={{ 
+                  fontWeight: 600, 
+                  color: '#2c3e50',
+                  background: 'linear-gradient(45deg, #2196F3, #1976D2)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  Departments
+                </Typography>
+                <Chip 
+                  label={`${departments.length} ${departments.length === 1 ? 'Department' : 'Departments'}`}
+                  sx={{ 
+                    background: 'linear-gradient(45deg, #2196F3, #1976D2)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.8rem'
+                  }}
+                />
+              </Box>
+            }
+            action={
+              <Button 
+                variant="contained" 
+                startIcon={<AddIcon />} 
+                onClick={() => setDeptDialogOpen(true)}
+                sx={{
+                  background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)'
+                  },
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                Add Department
+              </Button>
+            }
+          />
+          <CardContent>
+            <TableContainer sx={{ 
+              borderRadius: 2,
+              overflow: 'hidden',
+              border: '1px solid rgba(33, 150, 243, 0.1)'
+            }}>
+              <Table>
+                <TableHead sx={{ 
+                  background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(25, 118, 210, 0.05))'
+                }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600, color: '#2c3e50' }}>Name</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600, color: '#2c3e50' }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {departments.map(dept => (
+                    <TableRow key={dept.id} sx={{ 
+                      '&:hover': { 
+                        background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.05), rgba(25, 118, 210, 0.02))' 
+                      }
+                    }}>
+                      <TableCell sx={{ fontWeight: 500, color: '#2c3e50' }}>{dept.name}</TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="Edit Department">
+                          <IconButton 
+                            onClick={() => handleEditDepartment(dept)} 
+                            sx={{ 
+                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              color: 'white',
+                              borderRadius: 2,
+                              width: 40,
+                              height: 40,
+                              mr: 1,
+                              boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)',
+                              '&:hover': { 
+                                background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                                transform: 'translateY(-2px) scale(1.05)',
+                                boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)'
+                              },
+                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              '& .MuiSvgIcon-root': {
+                                fontSize: '1.2rem'
+                              }
+                            }}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete Department">
+                          <IconButton 
+                            onClick={() => {
+                              if (userRole !== 'owner') {
+                                setAlertOpen(true);
+                              } else {
+                                setDeptToDelete(dept.id);
+                              }
+                            }}
+                            sx={{ 
+                              background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+                              color: 'white',
+                              borderRadius: 2,
+                              width: 40,
+                              height: 40,
+                              boxShadow: '0 4px 16px rgba(244, 67, 54, 0.3)',
+                              '&:hover': { 
+                                background: 'linear-gradient(135deg, #d32f2f 0%, #c62828 100%)',
+                                transform: 'translateY(-2px) scale(1.05)',
+                                boxShadow: '0 8px 24px rgba(244, 67, 54, 0.4)'
+                              },
+                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              '& .MuiSvgIcon-root': {
+                                fontSize: '1.2rem'
+                              }
+                            }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      </Fade>
+        {/* Modern Add Department Dialog */}
+        <Dialog 
+          open={deptDialogOpen} 
+          onClose={() => setDeptDialogOpen(false)}
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+            color: 'white',
+            textAlign: 'center',
+            fontWeight: 600
+          }}>
             Add Department
-          </Button>
-        </Box>
-        <TableContainer component={Paper} sx={{ mb: 2 }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {departments.map(dept => (
-                <TableRow key={dept.id}>
-                  <TableCell>{dept.name}</TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Edit">
-                      <IconButton color="primary" onClick={() => handleEditDepartment(dept)}>
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton color="error" onClick={() => {
-                        if (userRole !== 'owner') {
-                          setAlertOpen(true);
-                        } else {
-                          setDeptToDelete(dept.id);
-                        }
-                      }}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        {/* Add Department Dialog */}
-        <Dialog open={deptDialogOpen} onClose={() => setDeptDialogOpen(false)}>
-          <DialogTitle>Add Department</DialogTitle>
-          <DialogContent>
+          </DialogTitle>
+          <DialogContent sx={{ p: 3 }}>
             <TextField
               label="Department Name"
               value={newDept}
               onChange={e => setNewDept(e.target.value)}
               fullWidth
               autoFocus
+              sx={{ mt: 2 }}
             />
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDeptDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddDepartment} variant="contained" disabled={!newDept}>Add</Button>
+          <DialogActions sx={{ p: 3, gap: 1 }}>
+            <Button 
+              onClick={() => setDeptDialogOpen(false)}
+              sx={{ 
+                color: '#2196F3',
+                fontWeight: 500
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddDepartment} 
+              variant="contained" 
+              disabled={!newDept}
+              sx={{
+                background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 12px rgba(76, 175, 80, 0.4)'
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              Add
+            </Button>
           </DialogActions>
         </Dialog>
-        {/* Edit Department Dialog */}
-        <Dialog open={editDeptDialogOpen} onClose={() => setEditDeptDialogOpen(false)}>
-          <DialogTitle>Edit Department</DialogTitle>
-          <DialogContent>
+        
+        {/* Modern Edit Department Dialog */}
+        <Dialog 
+          open={editDeptDialogOpen} 
+          onClose={() => setEditDeptDialogOpen(false)}
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+            color: 'white',
+            textAlign: 'center',
+            fontWeight: 600
+          }}>
+            Edit Department
+          </DialogTitle>
+          <DialogContent sx={{ p: 3 }}>
             <TextField
               label="Department Name"
               value={editDeptName}
               onChange={e => setEditDeptName(e.target.value)}
               fullWidth
               autoFocus
+              sx={{ mt: 2 }}
             />
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setEditDeptDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveEditDepartment} variant="contained" disabled={!editDeptName.trim()}>Save</Button>
+          <DialogActions sx={{ p: 3, gap: 1 }}>
+            <Button 
+              onClick={() => setEditDeptDialogOpen(false)}
+              sx={{ 
+                color: '#2196F3',
+                fontWeight: 500
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveEditDepartment} 
+              variant="contained" 
+              disabled={!editDeptName.trim()}
+              sx={{
+                background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 12px rgba(76, 175, 80, 0.4)'
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              Save
+            </Button>
           </DialogActions>
         </Dialog>
-        {/* Delete Department Confirmation Dialog */}
-        <Dialog open={!!deptToDelete} onClose={() => setDeptToDelete(null)}>
-          <DialogTitle>Delete Department</DialogTitle>
-          <DialogContent>
-            <Typography>Are you sure you want to delete this department? This action cannot be undone.</Typography>
+        
+        {/* Modern Delete Department Confirmation Dialog */}
+        <Dialog 
+          open={!!deptToDelete} 
+          onClose={() => setDeptToDelete(null)}
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+            color: 'white',
+            textAlign: 'center',
+            fontWeight: 600
+          }}>
+            Delete Department
+          </DialogTitle>
+          <DialogContent sx={{ p: 3 }}>
+            <Typography sx={{ 
+              color: '#2c3e50',
+              fontSize: '1.1rem',
+              textAlign: 'center'
+            }}>
+              Are you sure you want to delete this department? This action cannot be undone.
+            </Typography>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDeptToDelete(null)}>Cancel</Button>
-            <Button onClick={() => deptToDelete && handleDeleteDepartment(deptToDelete)} color="error" variant="contained">Delete</Button>
+          <DialogActions sx={{ p: 3, justifyContent: 'center', gap: 2 }}>
+            <Button 
+              onClick={() => setDeptToDelete(null)}
+              sx={{ 
+                color: '#2196F3',
+                fontWeight: 500
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => deptToDelete && handleDeleteDepartment(deptToDelete)} 
+              variant="contained"
+              sx={{
+                background: 'linear-gradient(45deg, #f44336, #d32f2f)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #d32f2f, #c62828)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 12px rgba(244, 67, 54, 0.4)'
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              Delete
+            </Button>
           </DialogActions>
         </Dialog>
-      </Box>
 
-      {/* Member Dialog */}
-      <Dialog open={memberDialogOpen} onClose={handleMemberClose} maxWidth="sm" fullWidth>
-        <DialogTitle>{editMode ? 'Edit Member' : 'Add Member'}</DialogTitle>
-        <DialogContent>
+      {/* Modern Member Dialog */}
+      <Dialog 
+        open={memberDialogOpen} 
+        onClose={handleMemberClose} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)',
+          color: 'white',
+          textAlign: 'center',
+          fontWeight: 600
+        }}>
+          {editMode ? 'Edit Member' : 'Add Member'}
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
           <TextField
             margin="dense"
             label="Name"
@@ -672,8 +1211,9 @@ export default function Teams() {
             fullWidth
             required
             autoFocus
+            sx={{ mb: 2 }}
           />
-          <FormControl fullWidth margin="dense" required>
+          <FormControl fullWidth margin="dense" required sx={{ mb: 2 }}>
             <InputLabel>Department</InputLabel>
             <Select
               name="departmentId"
@@ -693,7 +1233,7 @@ export default function Teams() {
               ))}
             </Select>
           </FormControl>
-          <FormControl fullWidth margin="dense" required>
+          <FormControl fullWidth margin="dense" required sx={{ mb: 2 }}>
             <InputLabel>Role</InputLabel>
             <Select
               name="role"
@@ -715,6 +1255,7 @@ export default function Teams() {
             fullWidth
             required
             type="email"
+            sx={{ mb: 2 }}
           />
           {!editMode && (
             <TextField
@@ -726,6 +1267,7 @@ export default function Teams() {
               fullWidth
               required
               type="password"
+              sx={{ mb: 2 }}
             />
           )}
           {!editMode && (
@@ -739,35 +1281,89 @@ export default function Teams() {
               required
               type="password"
               helperText="Please enter your own password to stay logged in after adding a member."
+              sx={{ mb: 2 }}
             />
           )}
           {currentMember.role && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>Responsibilities:</Typography>
+            <Box sx={{ mt: 2, p: 2, background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(245, 124, 0, 0.05))', borderRadius: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#2c3e50' }}>Responsibilities:</Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {currentMember.responsibilities?.map((resp, index) => (
-                  <Chip key={index} label={resp} size="small" variant="outlined" />
+                  <Chip 
+                    key={index} 
+                    label={resp} 
+                    size="small" 
+                    sx={{ 
+                      background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(245, 124, 0, 0.05))',
+                      border: '1px solid rgba(255, 152, 0, 0.2)',
+                      color: '#2c3e50',
+                      fontWeight: 500
+                    }}
+                  />
                 ))}
               </Box>
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleMemberClose}>Cancel</Button>
-          <Button onClick={handleMemberSave} variant="contained" disabled={
-            !currentMember.name ||
-            !currentMember.departmentId ||
-            !currentMember.role ||
-            !currentMember.email ||
-            (!editMode && !currentMember.password)
-          }>{editMode ? 'Save' : 'Add'}</Button>
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button 
+            onClick={handleMemberClose}
+            sx={{ 
+              color: '#FF9800',
+              fontWeight: 500
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleMemberSave} 
+            variant="contained" 
+            disabled={
+              !currentMember.name ||
+              !currentMember.departmentId ||
+              !currentMember.role ||
+              !currentMember.email ||
+              (!editMode && !currentMember.password)
+            }
+            sx={{
+              background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 4px 12px rgba(76, 175, 80, 0.4)'
+              },
+              transition: 'all 0.3s ease'
+            }}
+          >
+            {editMode ? 'Save' : 'Add'}
+          </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Role Dialog */}
-      <Dialog open={roleDialogOpen} onClose={handleRoleClose} maxWidth="md" fullWidth>
-        <DialogTitle>{editMode ? 'Edit Role' : 'Add Role'}</DialogTitle>
-        <DialogContent>
+      {/* Modern Role Dialog */}
+      <Dialog 
+        open={roleDialogOpen} 
+        onClose={handleRoleClose} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          textAlign: 'center',
+          fontWeight: 600
+        }}>
+          {editMode ? 'Edit Role' : 'Add Role'}
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
           <TextField
             margin="dense"
             label="Role Name"
@@ -776,9 +1372,15 @@ export default function Teams() {
             onChange={handleRoleInputChange}
             fullWidth
             required
+            sx={{ mb: 3 }}
           />
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>Responsibilities:</Typography>
+          <Box sx={{ 
+            mt: 2, 
+            p: 2, 
+            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))', 
+            borderRadius: 2 
+          }}>
+            <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, color: '#2c3e50' }}>Responsibilities:</Typography>
             <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
               <TextField
                 size="small"
@@ -788,7 +1390,20 @@ export default function Teams() {
                 onKeyPress={(e) => e.key === 'Enter' && handleAddResponsibility()}
                 sx={{ flexGrow: 1 }}
               />
-              <Button onClick={handleAddResponsibility} variant="outlined">Add</Button>
+              <Button 
+                onClick={handleAddResponsibility} 
+                variant="outlined"
+                sx={{
+                  borderColor: '#667eea',
+                  color: '#667eea',
+                  '&:hover': {
+                    borderColor: '#5a67d8',
+                    background: 'rgba(102, 126, 234, 0.1)'
+                  }
+                }}
+              >
+                Add
+              </Button>
             </Box>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
               {currentRole.responsibilities?.map((resp, index) => (
@@ -796,39 +1411,153 @@ export default function Teams() {
                   key={index} 
                   label={resp} 
                   size="small" 
-                  variant="outlined"
+                  sx={{ 
+                    background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+                    border: '1px solid rgba(102, 126, 234, 0.2)',
+                    color: '#2c3e50',
+                    fontWeight: 500
+                  }}
                   onDelete={() => handleRemoveResponsibility(index)}
                 />
               ))}
             </Box>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleRoleClose}>Cancel</Button>
-          <Button onClick={handleRoleSave} variant="contained">{editMode ? 'Save' : 'Add'}</Button>
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button 
+            onClick={handleRoleClose}
+            sx={{ 
+              color: '#667eea',
+              fontWeight: 500
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleRoleSave} 
+            variant="contained"
+            sx={{
+              background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 4px 12px rgba(76, 175, 80, 0.4)'
+              },
+              transition: 'all 0.3s ease'
+            }}
+          >
+            {editMode ? 'Save' : 'Add'}
+          </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Delete Member Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Remove Team Member</DialogTitle>
-        <DialogContent>
-          <Typography>This action will remove the team member from the team. Are you sure?</Typography>
+      {/* Modern Delete Member Confirmation Dialog */}
+      <Dialog 
+        open={deleteDialogOpen} 
+        onClose={() => setDeleteDialogOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+          color: 'white',
+          textAlign: 'center',
+          fontWeight: 600
+        }}>
+          Remove Team Member
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Typography sx={{ 
+            color: '#2c3e50',
+            fontSize: '1.1rem',
+            textAlign: 'center'
+          }}>
+            This action will remove the team member from the team. Are you sure?
+          </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={confirmDeleteMember} color="error" variant="contained">Delete</Button>
+        <DialogActions sx={{ p: 3, justifyContent: 'center', gap: 2 }}>
+          <Button 
+            onClick={() => setDeleteDialogOpen(false)}
+            sx={{ 
+              color: '#2196F3',
+              fontWeight: 500
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={confirmDeleteMember} 
+            variant="contained"
+            sx={{
+              background: 'linear-gradient(45deg, #f44336, #d32f2f)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #d32f2f, #c62828)',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 4px 12px rgba(244, 67, 54, 0.4)'
+              },
+              transition: 'all 0.3s ease'
+            }}
+          >
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Alert Dialog for non-owners trying to delete */}
-      <Dialog open={alertOpen} onClose={() => setAlertOpen(false)}>
-        <DialogTitle>Permission Denied</DialogTitle>
-        <DialogContent>
-          <Typography>You do not have permission to delete team members. Only the owner can perform this action.</Typography>
+      {/* Modern Alert Dialog for non-owners trying to delete */}
+      <Dialog 
+        open={alertOpen} 
+        onClose={() => setAlertOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+          color: 'white',
+          textAlign: 'center',
+          fontWeight: 600
+        }}>
+          Permission Denied
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Typography sx={{ 
+            color: '#2c3e50',
+            fontSize: '1.1rem',
+            textAlign: 'center'
+          }}>
+            You do not have permission to delete team members. Only the owner can perform this action.
+          </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAlertOpen(false)} color="primary">OK</Button>
+        <DialogActions sx={{ p: 3, justifyContent: 'center' }}>
+          <Button 
+            onClick={() => setAlertOpen(false)} 
+            variant="contained"
+            sx={{
+              background: 'linear-gradient(45deg, #f44336, #d32f2f)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #d32f2f, #c62828)',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 4px 12px rgba(244, 67, 54, 0.4)'
+              },
+              transition: 'all 0.3s ease',
+              fontWeight: 600,
+              px: 4,
+              py: 1
+            }}
+          >
+            OK
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
