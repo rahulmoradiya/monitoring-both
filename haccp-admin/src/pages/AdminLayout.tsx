@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { Drawer, List, ListItem, ListItemButton, ListItemText, ListItemIcon, Toolbar, Box, Button, AppBar, IconButton, Typography, Tooltip, Avatar } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -21,12 +22,17 @@ import ProfileModal from '../components/ProfileModal';
 const drawerWidth = 220;
 
 export default function AdminLayout({ companyDetails }: { companyDetails?: any }) {
+  const navigate = useNavigate();
   const user = auth.currentUser;
   const displayName = user?.displayName || user?.email || 'User';
   const email = user?.email || '';
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [userPhotoURL, setUserPhotoURL] = useState(user?.photoURL || '');
 
+  const handleLogout = async () => {
+    await signOut(auth);
+    navigate('/login');
+  };
 
   const handleProfileClick = () => {
     setProfileModalOpen(true);
@@ -180,6 +186,14 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
               </ListItemButton>
             </ListItem>
           </List>
+          <Button
+            onClick={handleLogout}
+            variant="contained"
+            color="error"
+            sx={{ mt: 4, width: '90%', ml: '5%' }}
+          >
+            Logout
+          </Button>
         </Box>
       </Drawer>
       <Box component="main" sx={{ flexGrow: 1, bgcolor: '#fafbfc', minHeight: '100vh', p: 0 }}>

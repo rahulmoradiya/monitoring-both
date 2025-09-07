@@ -1,22 +1,24 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  Avatar, 
-  Typography, 
-  Button, 
-  TextField, 
-  Box, 
-  Chip, 
-  CircularProgress, 
-  IconButton, 
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Avatar,
+  Typography,
+  Button,
+  TextField,
+  Box,
+  Chip,
+  CircularProgress,
+  IconButton,
   Tooltip,
   Divider,
   List,
   ListItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  Collapse,
+  Alert
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
@@ -27,8 +29,13 @@ import EmailIcon from '@mui/icons-material/Email';
 import WorkIcon from '@mui/icons-material/Work';
 import BusinessIcon from '@mui/icons-material/Business';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import LockIcon from '@mui/icons-material/Lock';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { auth, db, storage } from '../firebase';
-import { updateProfile, signOut } from 'firebase/auth';
+import { updateProfile, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { doc, getDocs, collectionGroup, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
@@ -56,6 +63,18 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
   const [departmentName, setDepartmentName] = useState('');
   const [responsibilities, setResponsibilities] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Password change states
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -213,6 +232,63 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
     } catch (err: any) {
       setError('Failed to logout. Please try again.');
     }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!user || !user.email) return;
+    
+    setChangingPassword(true);
+    setPasswordError('');
+    setPasswordSuccess('');
+    
+    try {
+      // Validate passwords
+      if (newPassword !== confirmPassword) {
+        setPasswordError('New passwords do not match');
+        return;
+      }
+      
+      if (newPassword.length < 6) {
+        setPasswordError('New password must be at least 6 characters');
+        return;
+      }
+      
+      // Reauthenticate user
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+      
+      // Update password
+      await updatePassword(user, newPassword);
+      
+      setPasswordSuccess('Password changed successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPasswordChange(false);
+      
+    } catch (err: any) {
+      console.error('Password change error:', err);
+      if (err.code === 'auth/wrong-password') {
+        setPasswordError('Current password is incorrect');
+      } else if (err.code === 'auth/weak-password') {
+        setPasswordError('New password is too weak');
+      } else if (err.code === 'auth/requires-recent-login') {
+        setPasswordError('Please log out and log back in before changing password');
+      } else {
+        setPasswordError('Failed to change password. Please try again.');
+      }
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleCancelPasswordChange = () => {
+    setShowPasswordChange(false);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordError('');
+    setPasswordSuccess('');
   };
 
   return (
@@ -394,6 +470,121 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
               <Typography variant="body2">
                 {user?.metadata?.lastSignInTime}
               </Typography>
+            </Box>
+
+            {/* Password Change Section */}
+            <Box sx={{ width: '100%', mt: 2 }}>
+              <Divider sx={{ mb: 2 }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <LockIcon fontSize="small" />
+                  Change Password
+                </Typography>
+                <IconButton 
+                  onClick={() => setShowPasswordChange(!showPasswordChange)}
+                  size="small"
+                >
+                  {showPasswordChange ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </IconButton>
+              </Box>
+              
+              <Collapse in={showPasswordChange}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <TextField
+                    label="Current Password"
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      endAdornment: (
+                        <IconButton
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          edge="end"
+                          size="small"
+                        >
+                          {showCurrentPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                        </IconButton>
+                      )
+                    }}
+                  />
+                  
+                  <TextField
+                    label="New Password"
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      endAdornment: (
+                        <IconButton
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          edge="end"
+                          size="small"
+                        >
+                          {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                        </IconButton>
+                      )
+                    }}
+                  />
+                  
+                  <TextField
+                    label="Confirm New Password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      endAdornment: (
+                        <IconButton
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          edge="end"
+                          size="small"
+                        >
+                          {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                        </IconButton>
+                      )
+                    }}
+                  />
+                  
+                  <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                    <Button
+                      variant="contained"
+                      onClick={handlePasswordChange}
+                      disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
+                      size="small"
+                      startIcon={changingPassword ? <CircularProgress size={16} /> : <LockIcon />}
+                      sx={{ flex: 1 }}
+                    >
+                      {changingPassword ? 'Changing...' : 'Change Password'}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      onClick={handleCancelPasswordChange}
+                      disabled={changingPassword}
+                      size="small"
+                      sx={{ flex: 1 }}
+                    >
+                      Cancel
+                    </Button>
+                  </Box>
+                  
+                  {passwordError && (
+                    <Alert severity="error" sx={{ mt: 1 }}>
+                      {passwordError}
+                    </Alert>
+                  )}
+                  
+                  {passwordSuccess && (
+                    <Alert severity="success" sx={{ mt: 1 }}>
+                      {passwordSuccess}
+                    </Alert>
+                  )}
+                </Box>
+              </Collapse>
             </Box>
 
             {/* Error/Success Messages */}
