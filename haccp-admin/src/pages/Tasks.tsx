@@ -349,13 +349,13 @@ export default function Tasks() {
         
         const querySnapshot = await getDocs(collection(db, 'companies', companyCode, collectionName));
         const allTasks = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().name,
+            id: doc.id,
+            name: doc.data().name,
           type: doc.data().type || 'detailed',
-          description: doc.data().description || '',
-          department: doc.data().department || '',
-          details: doc.data().details || {},
-          responsibility: doc.data().responsibility || '',
+            description: doc.data().description || '',
+            department: doc.data().department || '',
+            details: doc.data().details || {},
+            responsibility: doc.data().responsibility || '',
           inUse: doc.data().inUse !== undefined ? doc.data().inUse : true, // Handle undefined properly
         }));
         
@@ -651,10 +651,10 @@ export default function Tasks() {
                   } 
                   value="teamMember" 
                 />
-              </Tabs>
+      </Tabs>
               
               <Box sx={{ display: 'flex', gap: 2 }}>
-                {canEdit && activeTab === 'monitoring' && (
+        {canEdit && activeTab === 'monitoring' && (
                   <Button 
                     variant="contained" 
                     startIcon={<Add />} 
@@ -676,8 +676,8 @@ export default function Tasks() {
                   >
                     Assign Monitoring Task
                   </Button>
-                )}
-                {canEdit && activeTab === 'teamMember' && (
+        )}
+        {canEdit && activeTab === 'teamMember' && (
                   <Button 
                     variant="contained" 
                     startIcon={<Add />} 
@@ -699,8 +699,8 @@ export default function Tasks() {
                   >
                     Assign to Team Member
                   </Button>
-                )}
-              </Box>
+        )}
+      </Box>
             </Box>
           </Card>
         </Fade>
@@ -741,48 +741,48 @@ export default function Tasks() {
                   display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', justifyContent: 'space-between'
                 }}>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-                    <FormControl sx={{ minWidth: 120 }}>
+              <FormControl sx={{ minWidth: 120 }}>
                       <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Type</InputLabel>
                       <Select value={filterType} label="Type" onChange={e => setFilterType(e.target.value)} sx={{'& .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.3)'},'&:hover .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.5)'},'&.Mui-focused .MuiOutlinedInput-notchedOutline':{borderColor:'#667eea'}}}>
-                        <MenuItem value=""><em>All</em></MenuItem>
-                        {types.map(t => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
-                      </Select>
-                    </FormControl>
-                    <FormControl sx={{ minWidth: 120 }}>
+                  <MenuItem value=""><em>All</em></MenuItem>
+                  {types.map(t => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <FormControl sx={{ minWidth: 120 }}>
                       <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Status</InputLabel>
                       <Select value={filterStatus} label="Status" onChange={e => setFilterStatus(e.target.value)} sx={{'& .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.3)'},'&:hover .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.5)'},'&.Mui-focused .MuiOutlinedInput-notchedOutline':{borderColor:'#667eea'}}}>
-                        <MenuItem value=""><em>All</em></MenuItem>
-                        <MenuItem value="active">Active</MenuItem>
-                        <MenuItem value="completed">Completed</MenuItem>
-                        <MenuItem value="inactive">Inactive</MenuItem>
-                        <MenuItem value="overdue">Overdue</MenuItem>
-                      </Select>
-                    </FormControl>
-                    <FormControl sx={{ minWidth: 120 }}>
+                  <MenuItem value=""><em>All</em></MenuItem>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="completed">Completed</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
+                  <MenuItem value="overdue">Overdue</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl sx={{ minWidth: 120 }}>
                       <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Priority</InputLabel>
                       <Select value={filterPriority} label="Priority" onChange={e => setFilterPriority(e.target.value)} sx={{'& .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.3)'},'&:hover .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.5)'},'&.Mui-focused .MuiOutlinedInput-notchedOutline':{borderColor:'#667eea'}}}>
-                        <MenuItem value=""><em>All</em></MenuItem>
+                  <MenuItem value=""><em>All</em></MenuItem>
                         <MenuItem value="Low">Low</MenuItem>
                         <MenuItem value="Medium">Medium</MenuItem>
                         <MenuItem value="High">High</MenuItem>
-                      </Select>
-                    </FormControl>
-                    <FormControl sx={{ minWidth: 120 }}>
+                </Select>
+              </FormControl>
+              <FormControl sx={{ minWidth: 120 }}>
                       <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Role</InputLabel>
                       <Select value={filterRole} label="Role" onChange={e => setFilterRole(e.target.value)} sx={{'& .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.3)'}}}>
-                        <MenuItem value=""><em>All</em></MenuItem>
-                        {roles.map(role => <MenuItem key={role} value={role}>{role}</MenuItem>)}
-                      </Select>
-                    </FormControl>
-                    <FormControl sx={{ minWidth: 120 }}>
+                  <MenuItem value=""><em>All</em></MenuItem>
+                  {roles.map(role => <MenuItem key={role} value={role}>{role}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <FormControl sx={{ minWidth: 120 }}>
                       <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>User</InputLabel>
                       <Select value={filterUser} label="User" onChange={e => setFilterUser(e.target.value)} sx={{'& .MuiOutlinedInput-notchedOutline':{borderColor:'rgba(102,126,234,0.3)'}}}>
-                        <MenuItem value=""><em>All</em></MenuItem>
-                        {users.map(user => <MenuItem key={user.uid} value={user.uid}>{user.name}</MenuItem>)}
-                      </Select>
-                    </FormControl>
+                  <MenuItem value=""><em>All</em></MenuItem>
+                  {users.map(user => <MenuItem key={user.uid} value={user.uid}>{user.name}</MenuItem>)}
+                </Select>
+              </FormControl>
                     <TextField size="medium" placeholder="Search tasks..." value={search} onChange={e => setSearch(e.target.value)} InputProps={{ startAdornment: <FilterList sx={{ mr: 1, color: '#667eea' }} /> }} sx={{ minWidth: 300 }} />
-                  </Box>
+            </Box>
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <Button variant="outlined" size="small" onClick={() => { setSearch(''); setFilterType(''); setFilterStatus(''); setFilterPriority(''); setFilterRole(''); setFilterUser(''); setFilterDepartment(''); setFilterVersion(''); }} sx={{ borderColor: '#667eea', color: '#667eea' }}>Clear All</Button>
                   </Box>
@@ -979,7 +979,7 @@ export default function Tasks() {
                     </TableCell>
                     <TableCell align="right">
                       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                        {canEdit && (
+                      {canEdit && (
                           <Tooltip title="Edit">
                             <IconButton 
                               onClick={() => handleOpenDialog(task)}
@@ -1004,8 +1004,8 @@ export default function Tasks() {
                               <Edit />
                             </IconButton>
                           </Tooltip>
-                        )}
-                        {canEdit && (
+                      )}
+                      {canEdit && (
                           <Tooltip title="Delete">
                             <IconButton 
                               onClick={() => handleDeleteClick(task.id)}
@@ -1155,7 +1155,7 @@ export default function Tasks() {
                     </TableCell>
                     <TableCell align="right">
                       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                        {canEdit && (
+                      {canEdit && (
                           <Tooltip title="Edit">
                             <IconButton 
                               onClick={() => handleEditTeamMemberTask(task)}
@@ -1180,8 +1180,8 @@ export default function Tasks() {
                               <Edit />
                             </IconButton>
                           </Tooltip>
-                        )}
-                        {canEdit && (
+                      )}
+                      {canEdit && (
                           <Tooltip title="Delete">
                             <IconButton 
                               onClick={() => handleDeleteTeamMemberTask(task.id)}
@@ -1219,15 +1219,67 @@ export default function Tasks() {
           </Card>
         </Fade>
       {/* Create/Edit Task Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Assign Monitoring Task</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <FormControl fullWidth sx={{ mt: 2 }} required error={!currentTask.taskType}>
-            <InputLabel>Monitoring Task*</InputLabel>
+      <Dialog 
+        open={dialogOpen} 
+        onClose={handleCloseDialog} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 4,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <Box sx={{
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          p: 3,
+          textAlign: 'center'
+        }}>
+          <Typography variant="h4" component="h2" sx={{ 
+            fontWeight: 700, 
+            color: 'white',
+            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+          }}>
+            Assign Monitoring Task
+          </Typography>
+          <Typography variant="body1" sx={{ 
+            color: 'rgba(255, 255, 255, 0.9)',
+            mt: 1,
+            textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+          }}>
+            Create and assign monitoring tasks to your team
+          </Typography>
+        </Box>
+        <DialogContent sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: 3, 
+          p: 4,
+          background: 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <FormControl fullWidth required error={!currentTask.taskType}>
+            <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Monitoring Task*</InputLabel>
             <Select
               value={currentTask.taskType || 'detailed'}
               label="Monitoring Task*"
               onChange={e => setCurrentTask(t => ({ ...t, taskType: e.target.value, linkedItemId: '', linkedItemTitle: '' }))}
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#667eea',
+                }
+              }}
             >
               <MenuItem value="detailed">Detailed Task</MenuItem>
               <MenuItem value="checklist">Checklist Task</MenuItem>
@@ -1242,7 +1294,7 @@ export default function Tasks() {
           {/* Dynamic dropdown based on task type */}
           {currentTask.taskType && (
             <FormControl fullWidth>
-              <InputLabel>Select {currentTask.taskType === 'detailed' ? 'Detailed' : 'Checklist'} Task</InputLabel>
+              <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Select {currentTask.taskType === 'detailed' ? 'Detailed' : 'Checklist'} Task</InputLabel>
               <Select
                 value={currentTask.linkedItemId || ''}
                 label={`Select ${currentTask.taskType === 'detailed' ? 'Detailed' : 'Checklist'} Task`}
@@ -1253,6 +1305,17 @@ export default function Tasks() {
                     linkedItemId: e.target.value,
                     linkedItemTitle: selectedTask?.name || ''
                   }));
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(102, 126, 234, 0.3)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(102, 126, 234, 0.5)',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#667eea',
+                  }
                 }}
               >
                 {monitoringList.map(task => (
@@ -1279,6 +1342,23 @@ export default function Tasks() {
             required
             error={!currentTask.title}
             helperText={!currentTask.title ? 'Title is required' : ''}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#667eea',
+                }
+              },
+              '& .MuiInputLabel-root': {
+                color: '#667eea',
+                fontWeight: 500
+              }
+            }}
           />
           <TextField
             label="Description"
@@ -1287,13 +1367,41 @@ export default function Tasks() {
             fullWidth
             multiline
             minRows={2}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#667eea',
+                }
+              },
+              '& .MuiInputLabel-root': {
+                color: '#667eea',
+                fontWeight: 500
+              }
+            }}
           />
           <FormControl fullWidth>
-            <InputLabel>Status</InputLabel>
+            <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Status</InputLabel>
             <Select
               value={currentTask.status || 'active'}
               label="Status"
               onChange={e => setCurrentTask(t => ({ ...t, status: e.target.value }))}
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#667eea',
+                }
+              }}
             >
               <MenuItem value="active">Active</MenuItem>
               <MenuItem value="completed">Completed</MenuItem>
@@ -1302,11 +1410,22 @@ export default function Tasks() {
             </Select>
           </FormControl>
           <FormControl fullWidth>
-            <InputLabel>Priority</InputLabel>
+            <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Priority</InputLabel>
             <Select
               value={currentTask.priority || 'Medium'}
               label="Priority"
               onChange={e => setCurrentTask(t => ({ ...t, priority: e.target.value }))}
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#667eea',
+                }
+              }}
             >
               {priorities.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
             </Select>
@@ -1321,13 +1440,41 @@ export default function Tasks() {
             required
             error={!currentTask.dueDate}
             helperText={!currentTask.dueDate ? 'Start Date is required' : ''}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#667eea',
+                }
+              },
+              '& .MuiInputLabel-root': {
+                color: '#667eea',
+                fontWeight: 500
+              }
+            }}
           />
           <FormControl fullWidth required error={!currentTask.frequency}>
-            <InputLabel>Frequency*</InputLabel>
+            <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Frequency*</InputLabel>
             <Select
               value={currentTask.frequency || ''}
               label="Frequency*"
               onChange={e => setCurrentTask(t => ({ ...t, frequency: e.target.value }))}
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#667eea',
+                }
+              }}
             >
               {FREQUENCIES.map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)}
             </Select>
@@ -1338,7 +1485,7 @@ export default function Tasks() {
             )}
           </FormControl>
           <FormControl fullWidth required error={!currentTask.assignedRoles || currentTask.assignedRoles.length === 0}>
-            <InputLabel>Assign to Roles*</InputLabel>
+            <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Assign to Roles*</InputLabel>
             <Select
               multiple
               value={currentTask.assignedRoles || []}
@@ -1348,6 +1495,17 @@ export default function Tasks() {
                   {(selected as string[]).map(value => <Chip key={value} label={value} />)}
                 </Box>
               )}
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#667eea',
+                }
+              }}
             >
               {roles.map(role => <MenuItem key={role} value={role}>{role}</MenuItem>)}
             </Select>
@@ -1358,7 +1516,7 @@ export default function Tasks() {
             )}
           </FormControl>
           <FormControl fullWidth>
-            <InputLabel>Assign to Users</InputLabel>
+            <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Assign to Users</InputLabel>
             <Select
               multiple
               value={currentTask.assignedUsers || []}
@@ -1371,19 +1529,66 @@ export default function Tasks() {
                   })}
                 </Box>
               )}
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#667eea',
+                }
+              }}
             >
               {users.map(user => <MenuItem key={user.uid} value={user.uid}>{user.name}</MenuItem>)}
             </Select>
           </FormControl>
           {/* SOP Attach/Search for Monitoring Task */}
           <Box>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>Attach SOP(s)</Typography>
-            <Button variant="outlined" onClick={() => setMonitoringSopDialogOpen(true)} sx={{ mb: 1 }}>
+            <Typography variant="subtitle1" sx={{ 
+              mb: 2, 
+              color: '#667eea', 
+              fontWeight: 600,
+              background: 'linear-gradient(45deg, #667eea, #764ba2)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              Attach SOP(s)
+            </Typography>
+            <Button 
+              variant="outlined" 
+              onClick={() => setMonitoringSopDialogOpen(true)} 
+              sx={{ 
+                mb: 2,
+                borderColor: '#667eea',
+                color: '#667eea',
+                '&:hover': {
+                  borderColor: '#5a6fd8',
+                  background: 'rgba(102, 126, 234, 0.1)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
               {monitoringSelectedSOPs.length > 0 ? 'Edit SOPs' : 'Add SOPs'}
             </Button>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {monitoringSelectedSOPs.map(sop => (
-                <Chip key={sop.id} label={sop.title} onDelete={() => handleMonitoringSOPSelect(monitoringSelectedSOPs.filter(s => s.id !== sop.id))} />
+                <Chip 
+                  key={sop.id} 
+                  label={sop.title} 
+                  onDelete={() => handleMonitoringSOPSelect(monitoringSelectedSOPs.filter(s => s.id !== sop.id))}
+                  sx={{
+                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                    color: 'white',
+                    '& .MuiChip-deleteIcon': {
+                      color: 'white'
+                    }
+                  }}
+                />
               ))}
             </Box>
             <SOPSelectDialog
@@ -1395,21 +1600,102 @@ export default function Tasks() {
             />
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} disabled={saving}>Cancel</Button>
+        <Box sx={{
+          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+          p: 3,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: 2,
+          borderTop: '1px solid rgba(102, 126, 234, 0.1)'
+        }}>
+          <Button 
+            onClick={handleCloseDialog} 
+            disabled={saving}
+            sx={{
+              color: '#667eea',
+              borderColor: '#667eea',
+              '&:hover': {
+                borderColor: '#5a6fd8',
+                background: 'rgba(102, 126, 234, 0.1)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+              },
+              transition: 'all 0.3s ease'
+            }}
+          >
+            Cancel
+          </Button>
           <Button 
             onClick={handleSave} 
             variant="contained" 
             disabled={saving || !currentTask.title || !currentTask.taskType || !currentTask.dueDate || !currentTask.frequency || !currentTask.assignedRoles || currentTask.assignedRoles.length === 0}
+            sx={{
+              background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)'
+              },
+              '&:disabled': {
+                background: 'rgba(0, 0, 0, 0.12)',
+                color: 'rgba(0, 0, 0, 0.26)'
+              },
+              transition: 'all 0.3s ease',
+              fontWeight: 600,
+              borderRadius: 2,
+              px: 4,
+              py: 1
+            }}
           >
             {saving ? 'Saving...' : (editMode ? 'Save' : 'Add')}
           </Button>
-        </DialogActions>
+        </Box>
       </Dialog>
       {/* Assign to Team Member Modal */}
-      <Dialog open={assignTeamMemberOpen} onClose={handleCloseAssignTeamMember} maxWidth="sm" fullWidth>
-        <DialogTitle>Assign Personal Task to Team Member</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+      <Dialog 
+        open={assignTeamMemberOpen} 
+        onClose={handleCloseAssignTeamMember} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: 4,
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <Box sx={{
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          p: 3,
+          textAlign: 'center'
+        }}>
+          <Typography variant="h4" component="h2" sx={{ 
+            fontWeight: 700, 
+            color: 'white',
+            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+          }}>
+            Assign Personal Task to Team Member
+          </Typography>
+          <Typography variant="body1" sx={{ 
+            color: 'rgba(255, 255, 255, 0.9)',
+            mt: 1,
+            textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+          }}>
+            Create and assign personal tasks to your team members
+          </Typography>
+        </Box>
+        <DialogContent sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: 3, 
+          p: 4,
+          background: 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(10px)'
+        }}>
           <TextField
             label="Task Title*"
             value={teamTask.title}
@@ -1418,6 +1704,23 @@ export default function Tasks() {
             required
             error={!teamTask.title}
             helperText={!teamTask.title ? 'Task Title is required' : ''}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#667eea',
+                }
+              },
+              '& .MuiInputLabel-root': {
+                color: '#667eea',
+                fontWeight: 500
+              }
+            }}
           />
           <TextField
             label="Description"
@@ -1426,13 +1729,41 @@ export default function Tasks() {
             fullWidth
             multiline
             minRows={2}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#667eea',
+                }
+              },
+              '& .MuiInputLabel-root': {
+                color: '#667eea',
+                fontWeight: 500
+              }
+            }}
           />
           <FormControl fullWidth>
-            <InputLabel>Status</InputLabel>
+            <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Status</InputLabel>
             <Select
               value={teamTask.status}
               label="Status"
               onChange={e => setTeamTask(t => ({ ...t, status: e.target.value }))}
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#667eea',
+                }
+              }}
             >
               <MenuItem value="active">Active</MenuItem>
               <MenuItem value="completed">Completed</MenuItem>
@@ -1441,11 +1772,22 @@ export default function Tasks() {
             </Select>
           </FormControl>
           <FormControl fullWidth>
-            <InputLabel>Priority</InputLabel>
+            <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Priority</InputLabel>
             <Select
               value={teamTask.priority}
               label="Priority"
               onChange={e => setTeamTask(t => ({ ...t, priority: e.target.value }))}
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#667eea',
+                }
+              }}
             >
               {priorities.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
             </Select>
@@ -1460,9 +1802,26 @@ export default function Tasks() {
             required
             error={!teamTask.dueDate}
             helperText={!teamTask.dueDate ? 'Due Date is required' : ''}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#667eea',
+                }
+              },
+              '& .MuiInputLabel-root': {
+                color: '#667eea',
+                fontWeight: 500
+              }
+            }}
           />
           <FormControl fullWidth required error={!teamTask.assignedUserIds || teamTask.assignedUserIds.length === 0}>
-            <InputLabel>Assign to Team Member*</InputLabel>
+            <InputLabel sx={{ color: '#667eea', fontWeight: 500 }}>Assign to Team Member*</InputLabel>
             <Select
               multiple
               value={teamTask.assignedUserIds}
@@ -1475,6 +1834,17 @@ export default function Tasks() {
                   })}
                 </Box>
               )}
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(102, 126, 234, 0.5)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#667eea',
+                }
+              }}
             >
               {users.map(user => <MenuItem key={user.uid} value={user.uid}>{user.name}</MenuItem>)}
             </Select>
@@ -1486,13 +1856,49 @@ export default function Tasks() {
           </FormControl>
           {/* SOP Attach/Search */}
           <Box>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>Attach SOP(s)</Typography>
-            <Button variant="outlined" onClick={() => setSopDialogOpen(true)} sx={{ mb: 1 }}>
+            <Typography variant="subtitle1" sx={{ 
+              mb: 2, 
+              color: '#667eea', 
+              fontWeight: 600,
+              background: 'linear-gradient(45deg, #667eea, #764ba2)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              Attach SOP(s)
+            </Typography>
+            <Button 
+              variant="outlined" 
+              onClick={() => setSopDialogOpen(true)} 
+              sx={{ 
+                mb: 2,
+                borderColor: '#667eea',
+                color: '#667eea',
+                '&:hover': {
+                  borderColor: '#5a6fd8',
+                  background: 'rgba(102, 126, 234, 0.1)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
               {selectedSOPs.length > 0 ? 'Edit SOPs' : 'Add SOPs'}
             </Button>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {selectedSOPs.map(sop => (
-                <Chip key={sop.id} label={sop.title} onDelete={() => handleSOPSelect(selectedSOPs.filter(s => s.id !== sop.id))} />
+                <Chip 
+                  key={sop.id} 
+                  label={sop.title} 
+                  onDelete={() => handleSOPSelect(selectedSOPs.filter(s => s.id !== sop.id))}
+                  sx={{
+                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                    color: 'white',
+                    '& .MuiChip-deleteIcon': {
+                      color: 'white'
+                    }
+                  }}
+                />
               ))}
             </Box>
             <SOPSelectDialog
@@ -1504,10 +1910,55 @@ export default function Tasks() {
             />
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseAssignTeamMember}>Cancel</Button>
-          <Button onClick={handleAssignTeamMember} variant="contained" disabled={!teamTask.title || !teamTask.dueDate || !teamTask.assignedUserIds.length}>Assign</Button>
-        </DialogActions>
+        <Box sx={{
+          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
+          p: 3,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: 2,
+          borderTop: '1px solid rgba(102, 126, 234, 0.1)'
+        }}>
+          <Button 
+            onClick={handleCloseAssignTeamMember}
+            sx={{
+              color: '#667eea',
+              borderColor: '#667eea',
+              '&:hover': {
+                borderColor: '#5a6fd8',
+                background: 'rgba(102, 126, 234, 0.1)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+              },
+              transition: 'all 0.3s ease'
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleAssignTeamMember} 
+            variant="contained" 
+            disabled={!teamTask.title || !teamTask.dueDate || !teamTask.assignedUserIds.length}
+            sx={{
+              background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)'
+              },
+              '&:disabled': {
+                background: 'rgba(0, 0, 0, 0.12)',
+                color: 'rgba(0, 0, 0, 0.26)'
+              },
+              transition: 'all 0.3s ease',
+              fontWeight: 600,
+              borderRadius: 2,
+              px: 4,
+              py: 1
+            }}
+          >
+            Assign
+          </Button>
+        </Box>
       </Dialog>
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>

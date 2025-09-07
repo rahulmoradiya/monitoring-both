@@ -1489,53 +1489,32 @@ export default function Verification() {
 
       {/* Modern Data Tables Section */}
       <Fade in timeout={1400}>
-        <Card sx={{ 
-          background: 'rgba(255, 255, 255, 0.9)',
-          backdropFilter: 'blur(20px)',
-          borderRadius: 3,
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-          overflow: 'hidden'
-        }}>
-          <CardHeader 
-            title={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <DashboardCustomize sx={{ color: '#667eea' }} />
-                <Typography variant="h5" sx={{ 
-                  fontWeight: 700,
-                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
-                }}>
-                  Collected Data Details
-                </Typography>
-              </Box>
-            }
-            sx={{ 
-              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))',
-              borderBottom: '1px solid rgba(102, 126, 234, 0.1)'
-            }}
-          />
-          <CardContent sx={{ p: 0 }}>
-
-            {/* Modern Checklist Tasks Data */}
-            <Accordion 
-              defaultExpanded 
-              sx={{ 
-                mb: 2,
-                '& .MuiAccordionSummary-root': {
-                  background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(69, 160, 73, 0.05))',
-                  borderBottom: '1px solid rgba(76, 175, 80, 0.2)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(69, 160, 73, 0.08))',
+        <Box>
+          {/* Checklist Tasks Container */}
+            <Card sx={{ 
+              mb: 3,
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: 3,
+              border: '1px solid rgba(76, 175, 80, 0.2)',
+              boxShadow: '0 8px 32px rgba(76, 175, 80, 0.1)',
+              overflow: 'hidden'
+            }}>
+              <Accordion 
+                defaultExpanded 
+                sx={{ 
+                  '& .MuiAccordionSummary-root': {
+                    background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(69, 160, 73, 0.05))',
+                    borderBottom: '1px solid rgba(76, 175, 80, 0.2)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(69, 160, 73, 0.08))',
+                    }
+                  },
+                  '& .MuiAccordionDetails-root': {
+                    p: 0
                   }
-                },
-                '& .MuiAccordionDetails-root': {
-                  p: 0
-                }
-              }}
-            >
+                }}
+              >
               <AccordionSummary 
                 expandIcon={<ExpandMore sx={{ color: '#4CAF50' }} />}
                 sx={{ px: 3, py: 2 }}
@@ -1684,25 +1663,34 @@ export default function Verification() {
                   </Box>
                 )}
               </AccordionDetails>
-            </Accordion>
+              </Accordion>
+            </Card>
 
-            {/* Modern Detailed Tasks Data */}
-            <Accordion 
-              defaultExpanded 
-              sx={{ 
-                mb: 2,
-                '& .MuiAccordionSummary-root': {
-                  background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(25, 118, 210, 0.05))',
-                  borderBottom: '1px solid rgba(33, 150, 243, 0.2)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(25, 118, 210, 0.08))',
+            {/* Detailed Tasks Container */}
+            <Card sx={{ 
+              mb: 3,
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: 3,
+              border: '1px solid rgba(33, 150, 243, 0.2)',
+              boxShadow: '0 8px 32px rgba(33, 150, 243, 0.1)',
+              overflow: 'hidden'
+            }}>
+              <Accordion 
+                defaultExpanded 
+                sx={{ 
+                  '& .MuiAccordionSummary-root': {
+                    background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(25, 118, 210, 0.05))',
+                    borderBottom: '1px solid rgba(33, 150, 243, 0.2)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(25, 118, 210, 0.08))',
+                    }
+                  },
+                  '& .MuiAccordionDetails-root': {
+                    p: 0
                   }
-                },
-                '& .MuiAccordionDetails-root': {
-                  p: 0
-                }
-              }}
-            >
+                }}
+              >
               <AccordionSummary 
                 expandIcon={<ExpandMore sx={{ color: '#2196F3' }} />}
                 sx={{ px: 3, py: 2 }}
@@ -1828,25 +1816,34 @@ export default function Verification() {
                   </Box>
                 )}
               </AccordionDetails>
-            </Accordion>
+              </Accordion>
+            </Card>
 
-            {/* Modern Personal Tasks Data */}
-            <Accordion 
-              defaultExpanded 
-              sx={{ 
-                mb: 2,
-                '& .MuiAccordionSummary-root': {
-                  background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(245, 124, 0, 0.05))',
-                  borderBottom: '1px solid rgba(255, 152, 0, 0.2)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(245, 124, 0, 0.08))',
+            {/* Personal Tasks Container */}
+            <Card sx={{ 
+              mb: 3,
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: 3,
+              border: '1px solid rgba(255, 152, 0, 0.2)',
+              boxShadow: '0 8px 32px rgba(255, 152, 0, 0.1)',
+              overflow: 'hidden'
+            }}>
+              <Accordion 
+                defaultExpanded 
+                sx={{ 
+                  '& .MuiAccordionSummary-root': {
+                    background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(245, 124, 0, 0.05))',
+                    borderBottom: '1px solid rgba(255, 152, 0, 0.2)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(245, 124, 0, 0.08))',
+                    }
+                  },
+                  '& .MuiAccordionDetails-root': {
+                    p: 0
                   }
-                },
-                '& .MuiAccordionDetails-root': {
-                  p: 0
-                }
-              }}
-            >
+                }}
+              >
               <AccordionSummary 
                 expandIcon={<ExpandMore sx={{ color: '#FF9800' }} />}
                 sx={{ px: 3, py: 2 }}
@@ -1969,9 +1966,9 @@ export default function Verification() {
                   </Box>
                 )}
               </AccordionDetails>
-            </Accordion>
-          </CardContent>
-        </Card>
+              </Accordion>
+            </Card>
+        </Box>
       </Fade>
 
       {/* Modern Verify Data Dialog */}
