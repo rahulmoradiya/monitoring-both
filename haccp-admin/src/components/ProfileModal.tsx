@@ -18,7 +18,17 @@ import {
   ListItemIcon,
   ListItemText,
   Collapse,
-  Alert
+  Alert,
+  Card,
+  CardContent,
+  CardHeader,
+  Paper,
+  Fade,
+  Slide,
+  Stack,
+  Grid,
+  Badge,
+  LinearProgress
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
@@ -34,6 +44,16 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import SecurityIcon from '@mui/icons-material/Security';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import SendIcon from '@mui/icons-material/Send';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import PersonIcon from '@mui/icons-material/Person';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import ShieldIcon from '@mui/icons-material/Shield';
 import { auth, db, storage } from '../firebase';
 import { updateProfile, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { doc, getDocs, collectionGroup, setDoc } from 'firebase/firestore';
@@ -54,7 +74,6 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
   const [email, setEmail] = useState(user?.email || '');
   const [role, setRole] = useState('');
   const [companyCode, setCompanyCode] = useState('');
-  const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -66,6 +85,7 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
   
   // Password change states
   const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [passwordChangeMode, setPasswordChangeMode] = useState<'current' | 'email'>('current');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -75,6 +95,24 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  
+  // Email password reset states
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [resetCode, setResetCode] = useState('');
+  const [verifyingResetCode, setVerifyingResetCode] = useState(false);
+  const [resetCodeVerified, setResetCodeVerified] = useState(false);
+  const [sendingResetEmail, setSendingResetEmail] = useState(false);
+  
+  // 2FA states
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [show2FASetup, setShow2FASetup] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [twoFactorError, setTwoFactorError] = useState('');
+  const [twoFactorSuccess, setTwoFactorSuccess] = useState('');
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [showBackupCodes, setShowBackupCodes] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -87,15 +125,27 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
     setError('');
     try {
       if (user) {
-        // Find user doc in any company
         const usersSnap = await getDocs(collectionGroup(db, 'users'));
         const userDoc = usersSnap.docs.find(doc => doc.data().uid === user.uid);
         if (userDoc) {
-          setRole(userDoc.data().role || 'user');
-          setCompanyCode(userDoc.data().companyCode || '');
-          setDepartmentName(userDoc.data().departmentName || '');
-          setResponsibilities(userDoc.data().responsibilities || []);
-          setDisplayName(userDoc.data().name || user?.displayName || '');
+          const userData = userDoc.data();
+          setRole(userData.role || 'user');
+          setCompanyCode(userData.companyCode || '');
+          setDepartmentName(userData.departmentName || '');
+          setResponsibilities(userData.responsibilities || []);
+          setDisplayName(userData.name || user?.displayName || '');
+          setPhotoURL(user?.photoURL || '');
+          setEmail(user?.email || '');
+          setTwoFactorEnabled(userData.twoFactorEnabled || false);
+        } else {
+          setDisplayName(user?.displayName || '');
+          setPhotoURL(user?.photoURL || '');
+          setEmail(user?.email || '');
+          setRole('user');
+          setCompanyCode('');
+          setDepartmentName('');
+          setResponsibilities([]);
+          setTwoFactorEnabled(false);
         }
       }
     } catch (err: any) {
@@ -105,25 +155,14 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
     }
   };
 
-  const handleEdit = () => {
-    setEditMode(true);
-    setSuccess('');
-    setError('');
-  };
 
-  const handleCancel = () => {
-    setEditMode(false);
-    setDisplayName(user?.displayName || '');
-    setPhotoURL(user?.photoURL || '');
-    setNewPhoto(null);
-    setSuccess('');
-    setError('');
-  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setNewPhoto(e.target.files[0]);
       setPhotoURL(URL.createObjectURL(e.target.files[0]));
+      // Automatically save when photo is selected
+      handleSave();
     }
   };
 
@@ -134,84 +173,57 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
     setSuccess('');
     let updatedPhotoURL = photoURL;
     
-    // Add timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       setSaving(false);
       setError('Profile update timed out. Please try again.');
-    }, 30000); // 30 second timeout
+    }, 30000);
     
     try {
-      console.log('Starting profile update...');
-      
-      // Handle photo upload if there's a new photo
       if (newPhoto) {
-        console.log('Uploading new photo...', newPhoto.name, newPhoto.size);
-        
-        // Validate file size (max 5MB)
         if (newPhoto.size > 5 * 1024 * 1024) {
           throw new Error('Image size must be less than 5MB');
         }
         
-        // Validate file type
         if (!newPhoto.type.startsWith('image/')) {
           throw new Error('Please select a valid image file');
         }
         
         const storageRef = ref(storage, `user-avatars/${user.uid}.jpg`);
-        console.log('Storage ref created:', storageRef.fullPath);
-        
         await uploadBytes(storageRef, newPhoto);
-        console.log('Photo uploaded successfully');
-        
         updatedPhotoURL = await getDownloadURL(storageRef);
-        console.log('Photo URL obtained:', updatedPhotoURL);
       }
       
-      // Update Firebase Auth profile
-      console.log('Updating Firebase Auth profile...');
       await updateProfile(user, {
-        displayName,
         photoURL: updatedPhotoURL,
       });
-      console.log('Firebase Auth profile updated');
       
       setPhotoURL(updatedPhotoURL);
       
-      // Update Firestore user document
-      console.log('Updating Firestore user document...');
       const usersSnap = await getDocs(collectionGroup(db, 'users'));
       const userDoc = usersSnap.docs.find(doc => doc.data().uid === user.uid);
       
       if (userDoc) {
         const userData = userDoc.data();
         const companyCode = userData.companyCode;
-        console.log('Found user document, company code:', companyCode);
         
         const userJson = {
           ...userData,
-          name: displayName,
           photoURL: updatedPhotoURL,
         };
         
         await setDoc(doc(db, 'companies', companyCode, 'users', user.uid), userJson);
-        console.log('Firestore user document updated');
-      } else {
-        console.warn('User document not found in Firestore');
       }
       
       clearTimeout(timeoutId);
-      setEditMode(false);
-      setSuccess('Profile updated successfully!');
-      console.log('Profile update completed successfully');
+      setSuccess('Profile photo updated successfully!');
+      setNewPhoto(null);
       
-      // Notify parent component about the profile update
       if (onProfileUpdate) {
         onProfileUpdate(updatedPhotoURL);
       }
       
     } catch (err: any) {
       clearTimeout(timeoutId);
-      console.error('Error updating profile:', err);
       setError(`Failed to update profile: ${err.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
@@ -219,7 +231,6 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
   };
 
   const handleClose = () => {
-    setEditMode(false);
     setSuccess('');
     setError('');
     onClose();
@@ -234,8 +245,112 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
     }
   };
 
-  const handlePasswordChange = async () => {
+  // Password change functions
+  const handlePasswordChangeWithCurrent = async () => {
     if (!user || !user.email) return;
+    
+    setChangingPassword(true);
+    setPasswordError('');
+    setPasswordSuccess('');
+    
+    try {
+      if (newPassword !== confirmPassword) {
+        setPasswordError('New passwords do not match');
+        return;
+      }
+      
+      if (newPassword.length < 6) {
+        setPasswordError('New password must be at least 6 characters');
+        return;
+      }
+      
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
+      
+      setPasswordSuccess('Password changed successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPasswordChange(false);
+      
+    } catch (err: any) {
+      if (err.code === 'auth/wrong-password') {
+        setPasswordError('Current password is incorrect');
+      } else if (err.code === 'auth/weak-password') {
+        setPasswordError('New password is too weak');
+      } else {
+        setPasswordError('Failed to change password. Please try again.');
+      }
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleCancelPasswordChange = () => {
+    setShowPasswordChange(false);
+    setPasswordChangeMode('current');
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setResetCode('');
+    setResetEmailSent(false);
+    setResetCodeVerified(false);
+    setPasswordError('');
+    setPasswordSuccess('');
+  };
+
+  // Email password reset functions
+  const sendPasswordResetEmail = async () => {
+    if (!user?.email) return;
+    
+    setSendingResetEmail(true);
+    setPasswordError('');
+    setPasswordSuccess('');
+    
+    try {
+      // Import sendPasswordResetEmail from Firebase Auth
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      await sendPasswordResetEmail(auth, user.email);
+      setResetEmailSent(true);
+      setPasswordSuccess(`Password reset email sent to ${user.email}. Please check your email and click the link to reset your password.`);
+    } catch (err: any) {
+      console.error('Error sending password reset email:', err);
+      setPasswordError('Failed to send password reset email. Please try again.');
+    } finally {
+      setSendingResetEmail(false);
+    }
+  };
+
+  const verifyResetCode = async () => {
+    if (!resetCode) return;
+    
+    setVerifyingResetCode(true);
+    setPasswordError('');
+    setPasswordSuccess('');
+    
+    try {
+      // Import verifyPasswordResetCode from Firebase Auth
+      const { verifyPasswordResetCode } = await import('firebase/auth');
+      await verifyPasswordResetCode(auth, resetCode);
+      setResetCodeVerified(true);
+      setPasswordSuccess('Reset code verified! You can now set your new password.');
+    } catch (err: any) {
+      console.error('Error verifying reset code:', err);
+      if (err.code === 'auth/invalid-action-code') {
+        setPasswordError('Invalid or expired reset code. Please request a new one.');
+      } else if (err.code === 'auth/expired-action-code') {
+        setPasswordError('Reset code has expired. Please request a new one.');
+      } else {
+        setPasswordError('Failed to verify reset code. Please try again.');
+      }
+    } finally {
+      setVerifyingResetCode(false);
+    }
+  };
+
+  const handlePasswordResetWithEmail = async () => {
+    if (!resetCode || !newPassword || !confirmPassword) return;
     
     setChangingPassword(true);
     setPasswordError('');
@@ -253,401 +368,818 @@ export default function ProfileModal({ open, onClose, onProfileUpdate }: Profile
         return;
       }
       
-      // Reauthenticate user
-      const credential = EmailAuthProvider.credential(user.email, currentPassword);
-      await reauthenticateWithCredential(user, credential);
+      // Import confirmPasswordReset from Firebase Auth
+      const { confirmPasswordReset } = await import('firebase/auth');
+      await confirmPasswordReset(auth, resetCode, newPassword);
       
-      // Update password
-      await updatePassword(user, newPassword);
-      
-      setPasswordSuccess('Password changed successfully!');
-      setCurrentPassword('');
+      setPasswordSuccess('Password reset successfully! Please log in with your new password.');
+      setResetCode('');
       setNewPassword('');
       setConfirmPassword('');
+      setResetEmailSent(false);
+      setResetCodeVerified(false);
       setShowPasswordChange(false);
       
+      // Log out user after password reset
+      setTimeout(() => {
+        handleLogout();
+      }, 2000);
+      
     } catch (err: any) {
-      console.error('Password change error:', err);
-      if (err.code === 'auth/wrong-password') {
-        setPasswordError('Current password is incorrect');
+      console.error('Password reset error:', err);
+      if (err.code === 'auth/invalid-action-code') {
+        setPasswordError('Invalid or expired reset code. Please request a new one.');
+      } else if (err.code === 'auth/expired-action-code') {
+        setPasswordError('Reset code has expired. Please request a new one.');
       } else if (err.code === 'auth/weak-password') {
         setPasswordError('New password is too weak');
-      } else if (err.code === 'auth/requires-recent-login') {
-        setPasswordError('Please log out and log back in before changing password');
       } else {
-        setPasswordError('Failed to change password. Please try again.');
+        setPasswordError('Failed to reset password. Please try again.');
       }
     } finally {
       setChangingPassword(false);
     }
   };
 
-  const handleCancelPasswordChange = () => {
-    setShowPasswordChange(false);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setPasswordError('');
-    setPasswordSuccess('');
-  };
+  if (loading) return (
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="md" 
+      fullWidth
+      PaperProps={{
+        sx: { 
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          minHeight: '60vh'
+        }
+      }}
+    >
+      <DialogContent sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: 400,
+        background: 'transparent'
+      }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress size={60} sx={{ color: 'white', mb: 2 }} />
+          <Typography variant="h6" sx={{ color: 'white', fontWeight: 500 }}>
+            Loading Profile...
+          </Typography>
+        </Box>
+      </DialogContent>
+    </Dialog>
+  );
 
   return (
     <Dialog 
       open={open} 
       onClose={handleClose}
-      maxWidth="sm"
+      maxWidth="md" 
       fullWidth
       PaperProps={{
-        sx: {
-          borderRadius: 2,
+        sx: { 
+          borderRadius: 3,
+          background: 'transparent',
+          boxShadow: 'none',
+          overflow: 'visible',
           maxHeight: '90vh',
+          width: '90%',
+          maxWidth: '800px'
         }
       }}
     >
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
-        pb: 1
-      }}>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Profile
-        </Typography>
-        {!editMode && (
-          <IconButton onClick={handleEdit} size="small">
-            <EditIcon />
-          </IconButton>
-        )}
-      </DialogTitle>
-      
-      <DialogContent sx={{ p: 3 }}>
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {/* Avatar Section */}
-            <Box sx={{ position: 'relative', mb: 3 }}>
-              <Avatar
-                src={photoURL || undefined}
-                sx={{ 
-                  width: 80, 
-                  height: 80, 
-                  fontSize: 32, 
-                  bgcolor: 'primary.main',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                }}
-              >
-                {!photoURL && (displayName ? displayName[0] : email[0])}
-              </Avatar>
-              {editMode && (
-                <IconButton
-                  sx={{ 
-                    position: 'absolute', 
-                    bottom: -4, 
-                    right: -4, 
-                    bgcolor: 'white', 
-                    border: '2px solid',
-                    borderColor: 'primary.main',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                    '&:hover': {
-                      bgcolor: 'grey.50'
-                    }
-                  }}
-                  component="span"
-                  onClick={() => fileInputRef.current?.click()}
-                  size="small"
-                >
-                  <PhotoCamera sx={{ color: 'primary.main', fontSize: 16 }} />
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={handlePhotoChange}
-                  />
-                </IconButton>
-              )}
+      <Fade in={open} timeout={300}>
+        <Box sx={{ 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: 3,
+          overflow: 'hidden',
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(10px)',
+            zIndex: 1
+          }
+        }}>
+          {/* Header with gradient background - Compact */}
+          <Box sx={{ 
+            position: 'relative',
+            zIndex: 2,
+            p: 2,
+            pb: 1,
+            textAlign: 'center'
+          }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h5" sx={{ 
+                color: 'white', 
+                fontWeight: 700,
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}>
+                Profile
+              </Typography>
             </Box>
 
-            {/* Profile Information */}
-            {editMode ? (
-              <TextField
-                label="Name"
-                value={displayName}
-                onChange={e => setDisplayName(e.target.value)}
-                fullWidth
-                sx={{ mb: 3 }}
-                inputProps={{ maxLength: 40 }}
+            {/* Profile Picture with modern styling - Smaller */}
+            <Box sx={{ position: 'relative', display: 'inline-block', mb: 2 }}>
+              <Badge
+                overlap="circular"
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                badgeContent={
+                  <IconButton
+                    size="small"
+                    sx={{ 
+                      background: 'linear-gradient(45deg, #FF6B6B, #4ECDC4)',
+                      color: 'white',
+                      border: '2px solid white',
+                      width: 32,
+                      height: 32,
+                      '&:hover': {
+                        transform: 'scale(1.1)',
+                        background: 'linear-gradient(45deg, #FF5252, #26C6DA)'
+                      },
+                      transition: 'all 0.3s ease'
+                    }}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <PhotoCamera sx={{ fontSize: 16 }} />
+                  </IconButton>
+                }
+              >
+                <Avatar
+                  src={photoURL || undefined}
+                  sx={{ 
+                    width: 80, 
+                    height: 80, 
+                    fontSize: 32, 
+                    background: 'linear-gradient(45deg, #FF6B6B, #4ECDC4)',
+                    border: '3px solid rgba(255, 255, 255, 0.3)',
+                    boxShadow: '0 6px 24px rgba(0, 0, 0, 0.3)',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                >
+                  {!photoURL && (displayName ? displayName[0] : email[0])}
+                </Avatar>
+              </Badge>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handlePhotoChange}
               />
-            ) : (
-              <Box sx={{ width: '100%', textAlign: 'center', mb: 3 }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-                  {displayName || email}
-                </Typography>
-                
-                {/* Profile Details List */}
-                <List sx={{ width: '100%' }}>
-                  <ListItem sx={{ px: 0 }}>
-                    <ListItemIcon>
-                      <EmailIcon color="action" />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary="Email" 
-                      secondary={email}
-                      secondaryTypographyProps={{ color: 'text.secondary' }}
-                    />
-                  </ListItem>
-                  
-                  <ListItem sx={{ px: 0 }}>
-                    <ListItemIcon>
-                      <WorkIcon color="action" />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary="Role" 
-                      secondary={role}
-                      secondaryTypographyProps={{ color: 'text.secondary' }}
-                    />
-                  </ListItem>
-                  
-                  {departmentName && (
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemIcon>
-                        <BusinessIcon color="action" />
-                      </ListItemIcon>
-                      <ListItemText 
-                        primary="Department" 
-                        secondary={departmentName}
-                        secondaryTypographyProps={{ color: 'text.secondary' }}
-                      />
-                    </ListItem>
-                  )}
-                  
-                  {responsibilities.length > 0 && (
-                    <ListItem sx={{ px: 0, flexDirection: 'column', alignItems: 'flex-start' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <AssignmentIcon color="action" sx={{ mr: 1 }} />
-                        <Typography variant="body2" color="text.secondary">
-                          Responsibilities
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, ml: 4 }}>
-                        {responsibilities.map((resp, idx) => (
-                          <Chip key={idx} label={resp} size="small" variant="outlined" />
-                        ))}
-                      </Box>
-                    </ListItem>
-                  )}
-                </List>
-              </Box>
-            )}
+            </Box>
 
-            {/* Role Chip */}
+            {/* User Name - Smaller */}
+            <Typography variant="h6" sx={{ 
+              color: 'white', 
+              fontWeight: 700, 
+              mb: 1,
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}>
+              {displayName || email}
+            </Typography>
+
+            {/* Role Badge - Smaller */}
             <Chip 
-              label={role} 
-              color="primary" 
-              variant="outlined" 
+              label={role.toUpperCase()} 
+              size="small"
               sx={{ 
-                mb: 2, 
-                fontWeight: 600, 
-                textTransform: 'capitalize' 
+                background: 'rgba(255, 255, 255, 0.2)',
+                color: 'white',
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                mb: 2
               }} 
             />
+          </Box>
 
-            {/* Account Info */}
-            <Box sx={{ width: '100%', mt: 2 }}>
-              <Divider sx={{ mb: 2 }} />
-              <Typography variant="caption" color="text.secondary" display="block">
-                Account Created
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}>
-                {user?.metadata?.creationTime}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" display="block">
-                Last Sign-In
-              </Typography>
-              <Typography variant="body2">
-                {user?.metadata?.lastSignInTime}
-              </Typography>
+          {/* Main Content with glass morphism and scroll */}
+          <Box sx={{ 
+            position: 'relative',
+            zIndex: 2,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '24px 24px 0 0',
+            maxHeight: '60vh',
+            overflow: 'auto',
+            p: 2,
+            '&::-webkit-scrollbar': {
+              width: '6px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'rgba(0,0,0,0.1)',
+              borderRadius: '3px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: 'rgba(102, 126, 234, 0.5)',
+              borderRadius: '3px',
+              '&:hover': {
+                background: 'rgba(102, 126, 234, 0.7)',
+              }
+            }
+          }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+              {/* Left Column - User Info */}
+              <Box sx={{ flex: 1 }}>
+                <Card sx={{ 
+                  background: 'rgba(255, 255, 255, 0.8)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: 2,
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+                  mb: 2
+                }}>
+                  <CardHeader
+                    sx={{ pb: 1 }}
+                    title={
+                      <Typography variant="subtitle1" sx={{ 
+                        fontWeight: 600, 
+                        color: '#2c3e50',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        fontSize: '0.9rem'
+                      }}>
+                        <PersonIcon color="primary" sx={{ fontSize: 18 }} />
+                        Personal Information
+                      </Typography>
+                    }
+                  />
+                  <CardContent sx={{ pt: 0 }}>
+                    <Stack spacing={1.5}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <EmailIcon sx={{ color: '#667eea', fontSize: 18 }} />
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            Email
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
+                            {email}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <WorkIcon sx={{ color: '#667eea', fontSize: 18 }} />
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            Role
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
+                            {role}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      
+                      {departmentName && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <BusinessIcon sx={{ color: '#667eea', fontSize: 18 }} />
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              Department
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
+                              {departmentName}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      )}
+                    </Stack>
+                  </CardContent>
+                </Card>
+
+                {/* Account Activity Card */}
+                <Card sx={{ 
+                  background: 'rgba(255, 255, 255, 0.8)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: 2,
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)'
+                }}>
+                  <CardHeader
+                    sx={{ pb: 1 }}
+                    title={
+                      <Typography variant="subtitle1" sx={{ 
+                        fontWeight: 600, 
+                        color: '#2c3e50',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        fontSize: '0.9rem'
+                      }}>
+                        <CalendarTodayIcon color="primary" sx={{ fontSize: 18 }} />
+                        Account Activity
+                      </Typography>
+                    }
+                  />
+                  <CardContent sx={{ pt: 0 }}>
+                    <Stack spacing={1.5}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Account Created
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
+                          {user?.metadata?.creationTime}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Last Sign-In
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
+                          {user?.metadata?.lastSignInTime}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Box>
+
+              {/* Right Column - Security & Actions */}
+              <Box sx={{ flex: 1 }}>
+                {/* Password Change Card */}
+                <Card sx={{ 
+                  background: 'rgba(255, 255, 255, 0.8)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: 2,
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+                  mb: 2
+                }}>
+                  <CardHeader
+                    sx={{ pb: 1 }}
+                    title={
+                      <Typography variant="subtitle1" sx={{ 
+                        fontWeight: 600, 
+                        color: '#2c3e50',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        fontSize: '0.9rem'
+                      }}>
+                        <LockIcon color="primary" sx={{ fontSize: 18 }} />
+                        Security
+                      </Typography>
+                    }
+                    action={
+                      <IconButton 
+                        size="small"
+                        onClick={() => setShowPasswordChange(!showPasswordChange)}
+                        sx={{ 
+                          color: '#667eea',
+                          '&:hover': { transform: 'rotate(180deg)' },
+                          transition: 'transform 0.3s ease'
+                        }}
+                      >
+                        {showPasswordChange ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                      </IconButton>
+                    }
+                  />
+                  <Collapse in={showPasswordChange}>
+                    <CardContent>
+                      {(
+                        <Box>
+                          {/* Password Change Mode Selection */}
+                          <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+                            <Button
+                              variant={passwordChangeMode === 'current' ? 'contained' : 'outlined'}
+                              startIcon={<VpnKeyIcon />}
+                              onClick={() => setPasswordChangeMode('current')}
+                              sx={{
+                                background: passwordChangeMode === 'current' ? 'linear-gradient(45deg, #667eea, #764ba2)' : 'transparent',
+                                borderColor: '#667eea',
+                                color: passwordChangeMode === 'current' ? 'white' : '#667eea',
+                                flex: 1,
+                                '&:hover': {
+                                  background: passwordChangeMode === 'current' ? 'linear-gradient(45deg, #5a6fd8, #6a4190)' : 'rgba(102, 126, 234, 0.04)',
+                                  transform: 'translateY(-2px)',
+                                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
+                                },
+                                transition: 'all 0.3s ease'
+                              }}
+                            >
+                              Current Password
+                            </Button>
+                            <Button
+                              variant={passwordChangeMode === 'email' ? 'contained' : 'outlined'}
+                              startIcon={<EmailIcon />}
+                              onClick={() => setPasswordChangeMode('email')}
+                              sx={{
+                                background: passwordChangeMode === 'email' ? 'linear-gradient(45deg, #667eea, #764ba2)' : 'transparent',
+                                borderColor: '#667eea',
+                                color: passwordChangeMode === 'email' ? 'white' : '#667eea',
+                                flex: 1,
+                                '&:hover': {
+                                  background: passwordChangeMode === 'email' ? 'linear-gradient(45deg, #5a6fd8, #6a4190)' : 'rgba(102, 126, 234, 0.04)',
+                                  transform: 'translateY(-2px)',
+                                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
+                                },
+                                transition: 'all 0.3s ease'
+                              }}
+                            >
+                              Email Reset
+                            </Button>
+                          </Box>
+
+                          {/* Current Password Mode */}
+                          {passwordChangeMode === 'current' && (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <TextField
+                                label="Current Password"
+                                type={showCurrentPassword ? 'text' : 'password'}
+                                value={currentPassword}
+                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                fullWidth
+                                size="small"
+                                InputProps={{
+                                  endAdornment: (
+                                    <IconButton
+                                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                      edge="end"
+                                      size="small"
+                                    >
+                                      {showCurrentPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                    </IconButton>
+                                  )
+                                }}
+                              />
+                              
+                              <TextField
+                                label="New Password"
+                                type={showNewPassword ? 'text' : 'password'}
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                fullWidth
+                                size="small"
+                                InputProps={{
+                                  endAdornment: (
+                                    <IconButton
+                                      onClick={() => setShowNewPassword(!showNewPassword)}
+                                      edge="end"
+                                      size="small"
+                                    >
+                                      {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                    </IconButton>
+                                  )
+                                }}
+                              />
+                              
+                              <TextField
+                                label="Confirm New Password"
+                                type={showConfirmPassword ? 'text' : 'password'}
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                fullWidth
+                                size="small"
+                                InputProps={{
+                                  endAdornment: (
+                                    <IconButton
+                                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                      edge="end"
+                                      size="small"
+                                    >
+                                      {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                    </IconButton>
+                                  )
+                                }}
+                              />
+                              
+                              <Button
+                                variant="contained"
+                                onClick={handlePasswordChangeWithCurrent}
+                                disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
+                                startIcon={changingPassword ? <CircularProgress size={16} /> : <LockIcon />}
+                                fullWidth
+                                sx={{
+                                  background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                                  '&:hover': {
+                                    background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: '0 4px 12px rgba(76, 175, 80, 0.4)'
+                                  },
+                                  transition: 'all 0.3s ease'
+                                }}
+                              >
+                                {changingPassword ? 'Changing...' : 'Change Password'}
+                              </Button>
+                            </Box>
+                          )}
+
+                          {/* Email Reset Mode */}
+                          {passwordChangeMode === 'email' && (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <Alert severity="info" sx={{ mb: 2 }}>
+                                Don't remember your current password? We'll send a reset link to your email.
+                              </Alert>
+                              
+                              {!resetEmailSent ? (
+                                <Button
+                                  variant="contained"
+                                  onClick={sendPasswordResetEmail}
+                                  disabled={sendingResetEmail}
+                                  startIcon={sendingResetEmail ? <CircularProgress size={16} /> : <SendIcon />}
+                                  fullWidth
+                                  sx={{
+                                    background: 'linear-gradient(45deg, #FF9800, #F57C00)',
+                                    '&:hover': {
+                                      background: 'linear-gradient(45deg, #F57C00, #EF6C00)',
+                                      transform: 'translateY(-2px)',
+                                      boxShadow: '0 4px 12px rgba(255, 152, 0, 0.4)'
+                                    },
+                                    transition: 'all 0.3s ease'
+                                  }}
+                                >
+                                  {sendingResetEmail ? 'Sending...' : 'Send Reset Email'}
+                                </Button>
+                              ) : !resetCodeVerified ? (
+                                <>
+                                  <TextField
+                                    label="Enter Reset Code from Email"
+                                    value={resetCode}
+                                    onChange={(e) => setResetCode(e.target.value)}
+                                    fullWidth
+                                    size="small"
+                                    placeholder="Paste the reset code from your email"
+                                    helperText="Check your email for the password reset link and copy the code from the URL"
+                                  />
+                                  
+                                  <Button
+                                    variant="contained"
+                                    onClick={verifyResetCode}
+                                    disabled={verifyingResetCode || !resetCode}
+                                    startIcon={verifyingResetCode ? <CircularProgress size={16} /> : <CheckCircleIcon />}
+                                    fullWidth
+                                    sx={{
+                                      background: 'linear-gradient(45deg, #2196F3, #1976D2)',
+                                      '&:hover': {
+                                        background: 'linear-gradient(45deg, #1976D2, #1565C0)',
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 4px 12px rgba(33, 150, 243, 0.4)'
+                                      },
+                                      transition: 'all 0.3s ease'
+                                    }}
+                                  >
+                                    {verifyingResetCode ? 'Verifying...' : 'Verify Code'}
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <TextField
+                                    label="New Password"
+                                    type={showNewPassword ? 'text' : 'password'}
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    fullWidth
+                                    size="small"
+                                    InputProps={{
+                                      endAdornment: (
+                                        <IconButton
+                                          onClick={() => setShowNewPassword(!showNewPassword)}
+                                          edge="end"
+                                          size="small"
+                                        >
+                                          {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                        </IconButton>
+                                      )
+                                    }}
+                                  />
+                                  
+                                  <TextField
+                                    label="Confirm New Password"
+                                    type={showConfirmPassword ? 'text' : 'password'}
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    fullWidth
+                                    size="small"
+                                    InputProps={{
+                                      endAdornment: (
+                                        <IconButton
+                                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                          edge="end"
+                                          size="small"
+                                        >
+                                          {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                        </IconButton>
+                                      )
+                                    }}
+                                  />
+                                  
+                                  <Button
+                                    variant="contained"
+                                    onClick={handlePasswordResetWithEmail}
+                                    disabled={changingPassword || !newPassword || !confirmPassword}
+                                    startIcon={changingPassword ? <CircularProgress size={16} /> : <LockIcon />}
+                                    fullWidth
+                                    sx={{
+                                      background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                                      '&:hover': {
+                                        background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 4px 12px rgba(76, 175, 80, 0.4)'
+                                      },
+                                      transition: 'all 0.3s ease'
+                                    }}
+                                  >
+                                    {changingPassword ? 'Resetting...' : 'Reset Password'}
+                                  </Button>
+                                </>
+                              )}
+                            </Box>
+                          )}
+
+                          {/* Cancel Button */}
+                          <Button
+                            variant="outlined"
+                            onClick={handleCancelPasswordChange}
+                            disabled={changingPassword}
+                            fullWidth
+                            sx={{
+                              mt: 2,
+                              borderColor: '#667eea',
+                              color: '#667eea',
+                              '&:hover': {
+                                borderColor: '#5a6fd8',
+                                background: 'rgba(102, 126, 234, 0.04)',
+                                transform: 'translateY(-2px)'
+                              },
+                              transition: 'all 0.3s ease'
+                            }}
+                          >
+                            Cancel
+                          </Button>
+
+                          {/* Error/Success Messages */}
+                          {passwordError && (
+                            <Alert severity="error" sx={{ mt: 2 }}>
+                              {passwordError}
+                            </Alert>
+                          )}
+                          
+                          {passwordSuccess && (
+                            <Alert severity="success" sx={{ mt: 2 }}>
+                              {passwordSuccess}
+                            </Alert>
+                          )}
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Collapse>
+                </Card>
+
+                {/* 2FA Card */}
+                <Card sx={{ 
+                  background: 'rgba(255, 255, 255, 0.8)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: 2,
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)'
+                }}>
+                  <CardHeader
+                    sx={{ pb: 1 }}
+                    title={
+                      <Typography variant="subtitle1" sx={{ 
+                        fontWeight: 600, 
+                        color: '#2c3e50',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        fontSize: '0.9rem'
+                      }}>
+                        <SecurityIcon color="primary" sx={{ fontSize: 18 }} />
+                        Two-Factor Authentication
+                        {twoFactorEnabled && (
+                          <Chip 
+                            icon={<CheckCircleIcon />} 
+                            label="Enabled" 
+                            color="success" 
+                            size="small"
+                            sx={{ ml: 1, fontSize: '0.7rem' }}
+                          />
+                        )}
+                      </Typography>
+                    }
+                  />
+                  <CardContent sx={{ pt: 0 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.8rem' }}>
+                      Add an extra layer of security to your account.
+                    </Typography>
+                    <Button
+                      variant={twoFactorEnabled ? "outlined" : "contained"}
+                      color={twoFactorEnabled ? "error" : "primary"}
+                      size="small"
+                      startIcon={twoFactorEnabled ? <SecurityIcon sx={{ fontSize: 16 }} /> : <ShieldIcon sx={{ fontSize: 16 }} />}
+                      onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
+                      sx={{
+                        background: twoFactorEnabled ? 'transparent' : 'linear-gradient(45deg, #667eea, #764ba2)',
+                        fontSize: '0.8rem',
+                        py: 0.5,
+                        '&:hover': {
+                          background: twoFactorEnabled ? 'rgba(244, 67, 54, 0.04)' : 'linear-gradient(45deg, #5a6fd8, #6a4190)',
+                          transform: 'translateY(-1px)',
+                          boxShadow: '0 2px 8px rgba(102, 126, 234, 0.4)'
+                        },
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      {twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Box>
             </Box>
 
-            {/* Password Change Section */}
-            <Box sx={{ width: '100%', mt: 2 }}>
-              <Divider sx={{ mb: 2 }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LockIcon fontSize="small" />
-                  Change Password
-                </Typography>
-                <IconButton 
-                  onClick={() => setShowPasswordChange(!showPasswordChange)}
-                  size="small"
-                >
-                  {showPasswordChange ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                </IconButton>
-              </Box>
-              
-              <Collapse in={showPasswordChange}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <TextField
-                    label="Current Password"
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      endAdornment: (
-                        <IconButton
-                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                          edge="end"
-                          size="small"
-                        >
-                          {showCurrentPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                        </IconButton>
-                      )
-                    }}
-                  />
-                  
-                  <TextField
-                    label="New Password"
-                    type={showNewPassword ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      endAdornment: (
-                        <IconButton
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                          edge="end"
-                          size="small"
-                        >
-                          {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                        </IconButton>
-                      )
-                    }}
-                  />
-                  
-                  <TextField
-                    label="Confirm New Password"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      endAdornment: (
-                        <IconButton
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          edge="end"
-                          size="small"
-                        >
-                          {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                        </IconButton>
-                      )
-                    }}
-                  />
-                  
-                  <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                    <Button
-                      variant="contained"
-                      onClick={handlePasswordChange}
-                      disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
-                      size="small"
-                      startIcon={changingPassword ? <CircularProgress size={16} /> : <LockIcon />}
-                      sx={{ flex: 1 }}
-                    >
-                      {changingPassword ? 'Changing...' : 'Change Password'}
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      onClick={handleCancelPasswordChange}
-                      disabled={changingPassword}
-                      size="small"
-                      sx={{ flex: 1 }}
-                    >
-                      Cancel
-                    </Button>
-                  </Box>
-                  
-                  {passwordError && (
-                    <Alert severity="error" sx={{ mt: 1 }}>
-                      {passwordError}
-                    </Alert>
-                  )}
-                  
-                  {passwordSuccess && (
-                    <Alert severity="success" sx={{ mt: 1 }}>
-                      {passwordSuccess}
-                    </Alert>
-                  )}
-                </Box>
-              </Collapse>
+            {/* Action Buttons */}
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 1.5, 
+              mt: 2,
+              justifyContent: 'center'
+            }}>
+              <Button
+                variant="outlined"
+                size="medium"
+                onClick={handleClose}
+                sx={{
+                  px: 3,
+                  py: 1,
+                  borderRadius: 2,
+                  borderColor: '#667eea',
+                  color: '#667eea',
+                  fontSize: '0.85rem',
+                  '&:hover': {
+                    borderColor: '#5a6fd8',
+                    background: 'rgba(102, 126, 234, 0.04)',
+                    transform: 'translateY(-1px)'
+                  },
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                Close
+              </Button>
+              <Button
+                variant="contained"
+                size="medium"
+                color="error"
+                startIcon={<ExitToAppIcon />}
+                onClick={handleLogout}
+                sx={{
+                  background: 'linear-gradient(45deg, #FF6B6B, #ee5a52)',
+                  px: 3,
+                  py: 1,
+                  borderRadius: 2,
+                  fontSize: '0.85rem',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #ee5a52, #e74c3c)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 4px 12px rgba(255, 107, 107, 0.4)'
+                  },
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                Logout
+              </Button>
             </Box>
 
             {/* Error/Success Messages */}
             {error && (
-              <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mt: 2, 
+                  borderRadius: 2,
+                  background: 'rgba(244, 67, 54, 0.1)',
+                  border: '1px solid rgba(244, 67, 54, 0.2)'
+                }}
+              >
                 {error}
-              </Typography>
-            )}
-            {success && (
-              <Typography color="success.main" sx={{ mt: 2, textAlign: 'center' }}>
-                {success}
-              </Typography>
+              </Alert>
             )}
 
-            {/* Action Buttons */}
-            <Box sx={{ display: 'flex', gap: 2, mt: 3, width: '100%' }}>
-              {editMode ? (
-                <>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveIcon />}
-                    onClick={handleSave}
-                    disabled={saving || (!displayName && !newPhoto)}
-                    fullWidth
-                  >
-                    {saving ? <CircularProgress size={20} /> : 'Save'}
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="secondary"
-                    startIcon={<CancelIcon />}
-                    onClick={handleCancel}
-                    disabled={saving}
-                    fullWidth
-                  >
-                    Cancel
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="outlined"
-                    onClick={handleClose}
-                    fullWidth
-                  >
-                    Close
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={handleLogout}
-                    fullWidth
-                    startIcon={<ExitToAppIcon />}
-                  >
-                    Logout
-                  </Button>
-                </>
-              )}
-            </Box>
+            {success && (
+              <Alert 
+                severity="success" 
+                sx={{ 
+                  mt: 2, 
+                  borderRadius: 2,
+                  background: 'rgba(76, 175, 80, 0.1)',
+                  border: '1px solid rgba(76, 175, 80, 0.2)'
+                }}
+              >
+                {success}
+              </Alert>
+            )}
           </Box>
-        )}
-      </DialogContent>
+        </Box>
+      </Fade>
     </Dialog>
   );
 }
