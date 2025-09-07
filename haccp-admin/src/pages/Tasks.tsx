@@ -42,7 +42,7 @@ const statusColors: Record<string, 'default' | 'primary' | 'success' | 'warning'
 };
 const priorities = ['Low', 'Medium', 'High'];
 const types = [
-  { value: 'detail', label: 'Detailed Task' },
+  { value: 'detailed', label: 'Detailed Task' },
   { value: 'checklist', label: 'Checklist' },
 ];
 const FREQUENCIES = ['Once a day', 'Once a week', 'Once a month', 'One-time task'];
@@ -51,10 +51,9 @@ export default function Tasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [filterDepartment, setFilterDepartment] = useState('');
+  const [filterPriority, setFilterPriority] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [filterUser, setFilterUser] = useState('');
-  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [roles, setRoles] = useState<string[]>([]);
   const [users, setUsers] = useState<{ uid: string; name: string }[]>([]);
   const [companyCode, setCompanyCode] = useState<string>('');
@@ -106,6 +105,13 @@ export default function Tasks() {
   // State for tabs
   const [activeTab, setActiveTab] = useState<'monitoring' | 'teamMember'>('monitoring');
   const [teamMemberTasks, setTeamMemberTasks] = useState<any[]>([]);
+  
+  // Team member task filters
+  const [teamFilterStatus, setTeamFilterStatus] = useState('');
+  const [teamFilterPriority, setTeamFilterPriority] = useState('');
+  const [teamFilterUser, setTeamFilterUser] = useState('');
+  const [teamFilterSOP, setTeamFilterSOP] = useState('');
+  const [teamSearch, setTeamSearch] = useState('');
 
   useEffect(() => {
     // Fetch companyCode, roles, users, and check permissions
@@ -124,9 +130,6 @@ export default function Tasks() {
           // Fetch users
           const companyUsers = usersSnap.docs.filter(doc => doc.data().companyCode === userData.companyCode);
           setUsers(companyUsers.map(doc => ({ uid: doc.data().uid, name: doc.data().name || doc.data().email })));
-          // Fetch departments
-          const deptSnap = await getDocs(collection(db, 'companies', userData.companyCode, 'departments'));
-          setDepartments(deptSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as { id: string; name: string })));
         }
       }
     };
@@ -159,12 +162,21 @@ export default function Tasks() {
 
   // Filtering logic
   const filteredTasks = tasks.filter(task =>
-    (!filterType || task.type === filterType) &&
+    (!filterType || task.taskType === filterType) &&
     (!filterStatus || task.status === filterStatus) &&
-    (!filterDepartment || task.department === filterDepartment) &&
+    (!filterPriority || task.priority === filterPriority) &&
     (!filterRole || task.assignedRoles.includes(filterRole)) &&
     (!filterUser || task.assignedUsers.includes(filterUser)) &&
     (!search || task.title.toLowerCase().includes(search.toLowerCase()) || (task.description && task.description.toLowerCase().includes(search.toLowerCase())))
+  );
+
+  // Team member task filtering logic
+  const filteredTeamMemberTasks = teamMemberTasks.filter(task =>
+    (!teamFilterStatus || task.status === teamFilterStatus) &&
+    (!teamFilterPriority || task.priority === teamFilterPriority) &&
+    (!teamFilterUser || (task.assignedUserIds && task.assignedUserIds.includes(teamFilterUser))) &&
+    (!teamFilterSOP || (task.sopDetails && task.sopDetails.some((sop: any) => sop.title.toLowerCase().includes(teamFilterSOP.toLowerCase())))) &&
+    (!teamSearch || task.title.toLowerCase().includes(teamSearch.toLowerCase()) || (task.description && task.description.toLowerCase().includes(teamSearch.toLowerCase())))
   );
 
   // Delete logic
@@ -281,16 +293,6 @@ export default function Tasks() {
     return task.taskType === 'detailed' ? 'detailedMonitoring' : 'checklistMonitoring';
   };
 
-  // Status change from list
-  const handleStatusChange = async (id: string, status: string) => {
-    if (!companyCode) return;
-    const task = tasks.find(t => t.id === id);
-    if (!task) return;
-    
-    const collectionName = getCollectionName(task);
-    await updateDoc(doc(db, 'companies', companyCode, collectionName, id), { status });
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
-  };
 
   // Fetch Monitoring tasks when dialog opens - based on selected task type
   useEffect(() => {
@@ -533,10 +535,12 @@ export default function Tasks() {
                 </Select>
               </FormControl>
               <FormControl sx={{ minWidth: 120 }}>
-                <InputLabel>Department</InputLabel>
-                <Select value={filterDepartment} label="Department" onChange={e => setFilterDepartment(e.target.value)}>
+                <InputLabel>Priority</InputLabel>
+                <Select value={filterPriority} label="Priority" onChange={e => setFilterPriority(e.target.value)}>
                   <MenuItem value=""><em>All</em></MenuItem>
-                  {departments.map(dept => <MenuItem key={dept.id} value={dept.name}>{dept.name}</MenuItem>)}
+                  <MenuItem value="Low">Low</MenuItem>
+                  <MenuItem value="Medium">Medium</MenuItem>
+                  <MenuItem value="High">High</MenuItem>
                 </Select>
               </FormControl>
               <FormControl sx={{ minWidth: 120 }}>
@@ -588,21 +592,15 @@ export default function Tasks() {
                       />
                     </TableCell>
                     <TableCell>
-                      <FormControl size="small" sx={{ minWidth: 100 }}>
-                        <Select
-                          value={task.status}
-                          onChange={e => handleStatusChange(task.id, e.target.value)}
-                          disabled={!canEdit}
-                        >
-                          <MenuItem value="active">Active</MenuItem>
-                          <MenuItem value="completed">Completed</MenuItem>
-                          <MenuItem value="inactive">Inactive</MenuItem>
-                          <MenuItem value="overdue">Overdue</MenuItem>
-                        </Select>
-                      </FormControl>
-                      <Chip label={task.status} color={statusColors[task.status] || 'default'} size="small" sx={{ ml: 1 }} />
+                      <Chip label={task.status} color={statusColors[task.status] || 'default'} size="small" />
                     </TableCell>
-                    <TableCell>{task.priority}</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={task.priority} 
+                        color={task.priority === 'High' ? 'error' : task.priority === 'Medium' ? 'warning' : 'success'} 
+                        size="small" 
+                      />
+                    </TableCell>
                     <TableCell>{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}</TableCell>
                     <TableCell>
                       {task.assignedRoles?.map(role => <Chip key={role} label={role} size="small" sx={{ mr: 0.5 }} />)}
@@ -629,6 +627,49 @@ export default function Tasks() {
         )}
         {activeTab === 'teamMember' && (
           <>
+            {/* Team Member Task Filters */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+              <FormControl sx={{ minWidth: 120 }}>
+                <InputLabel>Status</InputLabel>
+                <Select value={teamFilterStatus} label="Status" onChange={e => setTeamFilterStatus(e.target.value)}>
+                  <MenuItem value=""><em>All</em></MenuItem>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="completed">Completed</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
+                  <MenuItem value="overdue">Overdue</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl sx={{ minWidth: 120 }}>
+                <InputLabel>Priority</InputLabel>
+                <Select value={teamFilterPriority} label="Priority" onChange={e => setTeamFilterPriority(e.target.value)}>
+                  <MenuItem value=""><em>All</em></MenuItem>
+                  <MenuItem value="Low">Low</MenuItem>
+                  <MenuItem value="Medium">Medium</MenuItem>
+                  <MenuItem value="High">High</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl sx={{ minWidth: 120 }}>
+                <InputLabel>Assigned User</InputLabel>
+                <Select value={teamFilterUser} label="Assigned User" onChange={e => setTeamFilterUser(e.target.value)}>
+                  <MenuItem value=""><em>All</em></MenuItem>
+                  {users.map(user => <MenuItem key={user.uid} value={user.uid}>{user.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <TextField
+                size="small"
+                placeholder="Filter by SOP..."
+                value={teamFilterSOP}
+                onChange={e => setTeamFilterSOP(e.target.value)}
+                sx={{ minWidth: 150 }}
+              />
+              <TextField
+                size="small"
+                placeholder="Search tasks..."
+                value={teamSearch}
+                onChange={e => setTeamSearch(e.target.value)}
+                sx={{ minWidth: 220 }}
+              />
+            </Box>
             <Table>
               <TableHead>
                 <TableRow>
@@ -643,12 +684,20 @@ export default function Tasks() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {teamMemberTasks.map(task => (
+                {filteredTeamMemberTasks.map(task => (
                   <TableRow key={task.id}>
                     <TableCell>{task.title}</TableCell>
                     <TableCell>{task.description}</TableCell>
-                    <TableCell>{task.status}</TableCell>
-                    <TableCell>{task.priority}</TableCell>
+                    <TableCell>
+                      <Chip label={task.status} color={statusColors[task.status] || 'default'} size="small" />
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={task.priority} 
+                        color={task.priority === 'High' ? 'error' : task.priority === 'Medium' ? 'warning' : 'success'} 
+                        size="small" 
+                      />
+                    </TableCell>
                     <TableCell>{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}</TableCell>
                     <TableCell>
                       {task.assignedUserIds?.map((uid: string) => {
