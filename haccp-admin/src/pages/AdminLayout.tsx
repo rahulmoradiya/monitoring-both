@@ -17,6 +17,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ChatIcon from '@mui/icons-material/Chat';
+import ProfileModal from '../components/ProfileModal';
 
 const drawerWidth = 220;
 
@@ -25,10 +26,20 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
   const user = auth.currentUser;
   const displayName = user?.displayName || user?.email || 'User';
   const email = user?.email || '';
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [userPhotoURL, setUserPhotoURL] = useState(user?.photoURL || '');
 
   const handleLogout = async () => {
     await signOut(auth);
     navigate('/login');
+  };
+
+  const handleProfileClick = () => {
+    setProfileModalOpen(true);
+  };
+
+  const handleProfileUpdate = (newPhotoURL: string) => {
+    setUserPhotoURL(newPhotoURL);
   };
 
   return (
@@ -200,9 +211,14 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
               </IconButton>
             </Tooltip>
             <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
-              <IconButton onClick={() => navigate('/admin/profile')} size="small" sx={{ ml: 1 }}>
-                <AccountCircleIcon sx={{ color: '#888' }} />
-                <Typography sx={{ fontWeight: 500, color: '#222', fontSize: '1rem', ml: 1 }}>{displayName}</Typography>
+              <IconButton onClick={handleProfileClick} size="small" sx={{ ml: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Avatar 
+                  src={userPhotoURL || user?.photoURL || undefined} 
+                  sx={{ width: 32, height: 32, fontSize: 14 }}
+                >
+                  {!(userPhotoURL || user?.photoURL) && (displayName ? displayName[0] : email[0])}
+                </Avatar>
+                <Typography sx={{ fontWeight: 500, color: '#222', fontSize: '1rem' }}>{displayName}</Typography>
               </IconButton>
             </Box>
           </Toolbar>
@@ -212,6 +228,13 @@ export default function AdminLayout({ companyDetails }: { companyDetails?: any }
           <Outlet />
         </Box>
       </Box>
+      
+      {/* Profile Modal */}
+      <ProfileModal 
+        open={profileModalOpen} 
+        onClose={() => setProfileModalOpen(false)}
+        onProfileUpdate={handleProfileUpdate}
+      />
     </Box>
   );
 } 
