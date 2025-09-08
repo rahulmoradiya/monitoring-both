@@ -6,6 +6,7 @@ import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsConditions from './pages/TermsConditions';
 import AdminLayout from './pages/AdminLayout';
@@ -85,8 +86,9 @@ function App() {
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-conditions" element={<TermsConditions />} />
         
-        {/* Existing Login Route */}
+        {/* Auth Routes */}
         <Route path="/login" element={!user ? <LoginPage onLogin={() => setUser(auth.currentUser)} /> : <Navigate to="/admin/dashboard" />} />
+        <Route path="/signup" element={!user ? <SignupPage onSignup={() => setUser(auth.currentUser)} /> : <Navigate to="/admin/dashboard" />} />
         
         {/* Existing Admin Routes - All functionality preserved */}
         <Route path="/admin" element={user ? <AdminLayout companyDetails={companyDetails} /> : <Navigate to="/login" /> }>

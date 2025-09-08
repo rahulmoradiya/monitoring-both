@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { db } from '../firebase';
 import { setDoc, doc } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
@@ -36,10 +36,11 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isRegister, setIsRegister] = useState(false);
-  const [name, setName] = useState('');
+  const [name] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,21 +49,7 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
     setLoading(true);
     
     try {
-      if (isRegister) {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        const companyCode = uuidv4().slice(0, 8);
-        await setDoc(doc(db, 'companies', companyCode, 'users', user.uid), {
-          uid: user.uid,
-          email,
-          name,
-          companyCode,
-          role: 'owner',
-          createdAt: new Date(),
-        });
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
+      await signInWithEmailAndPassword(auth, email, password);
       onLogin();
     } catch (err: any) {
       setError(err.message);
@@ -73,6 +60,26 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
 
   const handleTogglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Please enter your email address first.');
+      return;
+    }
+    
+    setForgotPasswordLoading(true);
+    setError('');
+    setForgotPasswordSuccess(false);
+    
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setForgotPasswordSuccess(true);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setForgotPasswordLoading(false);
+    }
   };
 
   return (
@@ -177,7 +184,7 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
                 fontWeight: 400,
                 textShadow: '0 1px 2px rgba(0,0,0,0.3)'
               }}>
-                {isRegister ? 'Create Your Account' : 'Welcome Back'}
+                Welcome Back
               </Typography>
             </Box>
           </Card>
@@ -196,36 +203,7 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
             <CardContent sx={{ p: 4 }}>
           <form onSubmit={handleSubmit}>
             <Stack spacing={3}>
-              {isRegister && (
-                <TextField
-                  fullWidth
-                  label="Full Name"
-                  variant="outlined"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  required
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
-                        borderColor: 'rgba(102, 126, 234, 0.3)',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'rgba(102, 126, 234, 0.5)',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#667eea',
-                      }
-                    }
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <RegisterIcon sx={{ color: '#667eea' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              )}
+              {/* Login screen only; signup moved to /signup */}
 
               <TextField
                 fullWidth
@@ -303,6 +281,45 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
                 }}
               />
 
+              {/* Forgot Password Link */}
+              <Box sx={{ textAlign: 'right', mb: 2 }}>
+                <Button
+                  onClick={handleForgotPassword}
+                  disabled={forgotPasswordLoading}
+                  sx={{
+                    color: '#667eea',
+                    textTransform: 'none',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    '&:hover': {
+                      background: 'rgba(102, 126, 234, 0.1)',
+                    },
+                    '&:disabled': {
+                      color: '#999',
+                    }
+                  }}
+                >
+                  {forgotPasswordLoading ? 'Sending...' : 'Forgot Password?'}
+                </Button>
+              </Box>
+
+              {forgotPasswordSuccess && (
+                <Alert 
+                  severity="success" 
+                  sx={{ 
+                    mb: 2,
+                    borderRadius: 3,
+                    background: 'rgba(76, 175, 80, 0.1)',
+                    border: '1px solid rgba(76, 175, 80, 0.2)',
+                    '& .MuiAlert-icon': {
+                      color: '#4caf50'
+                    }
+                  }}
+                >
+                  Password reset email sent! Check your inbox and follow the instructions.
+                </Alert>
+              )}
+
               {error && (
                 <Alert 
                   severity="error" 
@@ -351,7 +368,7 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
                     Processing...
                   </Box>
                 ) : (
-                  isRegister ? 'Create Account' : 'Sign In'
+                  'Sign In'
                 )}
               </Button>
 
@@ -367,29 +384,8 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
                 />
               </Divider>
 
-              <Button
-                fullWidth
-                variant="outlined"
-                size="large"
-                onClick={() => setIsRegister(r => !r)}
-                sx={{
-                  py: 2,
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  borderRadius: 3,
-                  borderColor: '#667eea',
-                  color: '#667eea',
-                  background: 'rgba(102, 126, 234, 0.05)',
-                  '&:hover': {
-                    borderColor: '#5a6fd8',
-                    background: 'rgba(102, 126, 234, 0.1)',
-                    transform: 'translateY(-1px)',
-                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)',
-                  },
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                {isRegister ? 'Already have an account? Sign In' : 'No account? Create One'}
+              <Button fullWidth variant="outlined" size="large" onClick={() => navigate('/signup')} sx={{ py: 2, fontSize: '1rem', fontWeight: 600, borderRadius: 3, borderColor: '#667eea', color: '#667eea', background: 'rgba(102, 126, 234, 0.05)', '&:hover': { borderColor: '#5a6fd8', background: 'rgba(102, 126, 234, 0.1)', transform: 'translateY(-1px)', boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)' }, transition: 'all 0.3s ease' }}>
+                No account? Create One
               </Button>
             </Stack>
           </form>
